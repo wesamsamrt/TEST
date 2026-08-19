@@ -1,0 +1,2873 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>وسام سمارت | لوحة الإدارة</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="admin.css"
+    >
+
+   
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     شاشة الدخول
+========================================================= -->
+
+<div
+    class="login-page"
+    id="loginPage"
+>
+
+    <div class="login-card">
+
+        <div class="login-brand">
+
+            <div class="login-logo">
+                WS
+            </div>
+
+            <div>
+                <strong>WESAM SMART</strong>
+                <span>لوحة الإدارة</span>
+            </div>
+
+        </div>
+
+
+        <div class="login-icon">
+            🔐
+        </div>
+
+
+        <h1>
+            لوحة الإدارة
+        </h1>
+
+        <p>
+            أدخل رمز الإدارة للمتابعة
+        </p>
+
+
+        <input
+            id="adminCode"
+            type="password"
+            placeholder="رمز الإدارة"
+            autocomplete="off"
+        >
+
+
+        <button id="loginButton">
+            دخول
+        </button>
+
+
+        <div
+            id="loginMessage"
+            class="login-message"
+        ></div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     لوحة الإدارة
+========================================================= -->
+
+<div
+    class="admin-page"
+    id="adminPage"
+    style="display:none;"
+>
+
+
+    <!-- =====================================================
+         Sidebar
+    ====================================================== -->
+
+    <aside class="admin-sidebar">
+
+
+        <div class="sidebar-logo">
+
+            <div class="sidebar-logo-mark">
+                WS
+            </div>
+
+            <div class="sidebar-logo-text">
+
+                <strong>
+                    WESAM SMART
+                </strong>
+
+                <span>
+                    SMART STORE
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="sidebar-menu-title">
+            القائمة الرئيسية
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+
+            <button
+                class="sidebar-item active"
+                id="dashboardButton"
+                type="button"
+            >
+
+                <span class="sidebar-item-icon">
+                    <span>⌂</span>
+                </span>
+
+                <span>
+                    الرئيسية
+                </span>
+
+            </button>
+
+
+
+            <button
+                class="sidebar-item"
+                id="productsSidebarButton"
+                type="button"
+            >
+
+                <span class="sidebar-item-icon">
+                    <span>▣</span>
+                </span>
+
+                <span>
+                    المنتجات
+                </span>
+
+            </button>
+
+
+
+            <button
+                class="sidebar-item"
+                id="ordersSidebarButton"
+                type="button"
+            >
+
+                <span class="sidebar-item-icon">
+                    <span>▤</span>
+                </span>
+
+                <span>
+                    الطلبات
+                </span>
+
+            </button>
+
+
+
+            <button
+                class="sidebar-item"
+                id="categoriesSidebarButton"
+                type="button"
+            >
+
+                <span class="sidebar-item-icon">
+                    <span>◫</span>
+                </span>
+
+                <span>
+                    التصنيفات
+                </span>
+
+            </button>
+
+
+
+            <button
+                class="sidebar-item"
+                id="customersSidebarButton"
+                type="button"
+            >
+
+                <span class="sidebar-item-icon">
+                    <span>♙</span>
+                </span>
+
+                <span>
+                    العملاء
+                </span>
+
+            </button>
+
+
+
+            <button
+                class="sidebar-item"
+                type="button"
+            >
+
+                <span class="sidebar-item-icon">
+                    <span>◷</span>
+                </span>
+
+                <span>
+                    التقارير
+                </span>
+
+            </button>
+
+
+
+            <button
+                class="sidebar-item"
+                type="button"
+            >
+
+                <span class="sidebar-item-icon">
+                    <span>⚙</span>
+                </span>
+
+                <span>
+                    الإعدادات
+                </span>
+
+            </button>
+
+        </nav>
+
+
+
+        <div class="sidebar-pro-card">
+
+            <div class="sidebar-pro-icon">
+                ✦
+            </div>
+
+            <strong>
+                نسخة برو
+            </strong>
+
+            <p>
+                ميزات إضافية لتطوير متجرك
+            </p>
+
+            <button type="button">
+                ترقية الآن
+            </button>
+
+        </div>
+
+
+
+        <button
+            id="logoutButton"
+            class="sidebar-logout"
+            type="button"
+        >
+
+            <span>
+                ⇥
+            </span>
+
+            تسجيل الخروج
+
+        </button>
+
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         Main
+    ====================================================== -->
+
+    <div class="admin-main">
+
+
+        <!-- =================================================
+             Top Header
+        ================================================== -->
+
+        <header class="top-header">
+
+
+            <div class="top-header-search">
+
+                <span class="search-icon">
+                    ⌕
+                </span>
+
+                <input
+                    type="text"
+                    placeholder="ابحث عن منتج أو موديل..."
+                    id="dashboardSearch"
+                >
+
+            </div>
+
+
+
+            <div class="top-header-actions">
+
+
+                <button
+                    class="header-icon-button"
+                    type="button"
+                >
+                    ◔
+                    <span class="notification-dot">
+                        3
+                    </span>
+                </button>
+
+
+                <button
+                    class="header-icon-button"
+                    type="button"
+                >
+                    ▣
+                </button>
+
+
+                <button
+                    class="header-icon-button"
+                    type="button"
+                >
+                    ⚙
+                </button>
+
+
+
+                <div class="admin-user">
+
+                    <div class="admin-user-avatar">
+                        👨🏻
+                    </div>
+
+                    <div class="admin-user-info">
+
+                        <strong>
+                            مدير المتجر
+                        </strong>
+
+                        <span>
+                            المسؤول
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =================================================
+             Dashboard
+        ================================================== -->
+
+        <main
+            class="dashboard-content"
+            id="dashboardContent"
+        >
+
+
+            <!-- =============================================
+                 Welcome Banner
+            ============================================== -->
+
+            <section class="dashboard-banner">
+
+
+                <div class="banner-content">
+
+                    <div class="banner-small-title">
+                        👋 مرحباً بك في وسام سمارت
+                    </div>
+
+                    <h1>
+                        تحكم كامل في
+                        <br>
+                        متجرك بكل سهولة
+                    </h1>
+
+                    <p>
+                        إدارة ذكية، تقارير دقيقة، وتجربة سلسة لنمو أعمالك
+                    </p>
+
+
+                    <button
+                        class="banner-button"
+                        type="button"
+                    >
+
+                        استعرض التقارير
+
+                        <span>
+                            ◫
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+
+                <div class="banner-illustration">
+
+
+                    <div class="illustration-window">
+
+
+                        <div class="illustration-window-top">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+
+
+                        <div class="illustration-content">
+
+
+                            <div class="illustration-chart-circle">
+                                <span>
+                                    ◔
+                                </span>
+                            </div>
+
+
+                            <div class="illustration-lines">
+
+                                <span></span>
+                                <span></span>
+                                <span></span>
+
+                            </div>
+
+
+                        </div>
+
+
+                        <div class="illustration-bottom-lines">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="illustration-bag">
+                        🛍
+                    </div>
+
+
+                    <div class="illustration-chart-icon">
+                        ↗
+                    </div>
+
+                </div>
+
+
+            </section>
+
+
+
+            <!-- =============================================
+                 Statistics
+            ============================================== -->
+
+            <section class="stats-grid">
+
+
+                <article class="stat-card">
+
+                    <div class="stat-card-top">
+
+                        <div>
+
+                            <span class="stat-title">
+                                إجمالي الطلبات
+                            </span>
+
+                            <strong
+                                id="dashboardOrdersCount"
+                                class="stat-number"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="stat-icon stat-blue">
+                            🛍
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-bottom">
+
+                        <span class="stat-positive">
+                            +12.5%
+                        </span>
+
+                        <span>
+                            من الشهر الماضي
+                        </span>
+
+                    </div>
+
+                </article>
+
+
+
+                <article class="stat-card">
+
+                    <div class="stat-card-top">
+
+                        <div>
+
+                            <span class="stat-title">
+                                إجمالي المنتجات
+                            </span>
+
+                            <strong
+                                id="dashboardProductsCount"
+                                class="stat-number"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="stat-icon stat-purple">
+                            ◈
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-bottom">
+
+                        <span class="stat-positive">
+                            +8.3%
+                        </span>
+
+                        <span>
+                            من الشهر الماضي
+                        </span>
+
+                    </div>
+
+                </article>
+
+
+
+                <article class="stat-card">
+
+                    <div class="stat-card-top">
+
+                        <div>
+
+                            <span class="stat-title">
+                                إجمالي المبيعات
+                            </span>
+
+                            <strong
+                                id="dashboardSalesCount"
+                                class="stat-number"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="stat-icon stat-green">
+                            ↗
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-bottom">
+
+                        <span class="stat-positive">
+                            +15.7%
+                        </span>
+
+                        <span>
+                            من الشهر الماضي
+                        </span>
+
+                    </div>
+
+                </article>
+
+
+
+                <article class="stat-card">
+
+                    <div class="stat-card-top">
+
+                        <div>
+
+                            <span class="stat-title">
+                                العملاء المسجلين
+                            </span>
+
+                            <strong
+                                id="dashboardCustomersCount"
+                                class="stat-number"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="stat-icon stat-orange">
+                            ♙
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-bottom">
+
+                        <span class="stat-positive">
+                            +10.1%
+                        </span>
+
+                        <span>
+                            من الشهر الماضي
+                        </span>
+
+                    </div>
+
+                </article>
+
+
+            </section>
+
+
+
+            <!-- =============================================
+                 Middle Grid
+            ============================================== -->
+
+            <section class="dashboard-middle-grid">
+
+
+                <!-- =========================================
+                     Quick Actions
+                ========================================== -->
+
+                <div class="dashboard-panel quick-actions-panel">
+
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>
+                                إجراءات سريعة
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="quick-actions-grid">
+
+
+                        <button
+                            class="quick-action"
+                            id="addProductQuickButton"
+                            type="button"
+                        >
+
+                            <div class="quick-action-icon purple">
+                                +
+                            </div>
+
+                            <span>
+                                إضافة منتج
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            class="quick-action"
+                            id="showInventoryButton"
+                            type="button"
+                        >
+
+                            <div class="quick-action-icon green">
+                                ◈
+                            </div>
+
+                            <span>
+                                عرض المخزون
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            class="quick-action"
+                            id="newOrderQuickButton"
+                            type="button"
+                        >
+
+                            <div class="quick-action-icon blue">
+                                🛒
+                            </div>
+
+                            <span>
+                                طلب جديد
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            class="quick-action"
+                            id="salesReportButton"
+                            type="button"
+                        >
+
+                            <div class="quick-action-icon orange">
+                                ▥
+                            </div>
+
+                            <span>
+                                تقرير المبيعات
+                            </span>
+
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     Sales Chart
+                ========================================== -->
+
+                <div class="dashboard-panel sales-panel">
+
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>
+                                ملخص المبيعات
+                            </h2>
+
+                            <div class="sales-total">
+
+                                <strong
+                                    id="dashboardSalesTotal"
+                                >
+                                    —
+                                </strong>
+
+                                <span>
+                                    ر.س
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="panel-header-left">
+
+                            <span class="growth">
+                                +15.7%
+                            </span>
+
+                            <span>
+                                من الشهر الماضي
+                            </span>
+
+                        </div>
+
+
+                        <select
+                            class="period-select"
+                            id="salesPeriod"
+                        >
+
+                            <option>
+                                هذا الشهر
+                            </option>
+
+                            <option>
+                                الشهر الماضي
+                            </option>
+
+                            <option>
+                                هذا العام
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+
+                    <div class="chart-area">
+
+
+                        <div class="chart-y-axis">
+
+                            <span>
+                                50K
+                            </span>
+
+                            <span>
+                                40K
+                            </span>
+
+                            <span>
+                                30K
+                            </span>
+
+                            <span>
+                                20K
+                            </span>
+
+                            <span>
+                                10K
+                            </span>
+
+                            <span>
+                                0
+                            </span>
+
+                        </div>
+
+
+
+                        <div class="chart-main">
+
+
+                            <div class="chart-grid-lines">
+
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+
+                            </div>
+
+
+                            <svg
+                                class="sales-svg"
+                                viewBox="0 0 700 250"
+                                preserveAspectRatio="none"
+                            >
+
+                                <defs>
+
+                                    <linearGradient
+                                        id="salesGradient"
+                                        x1="0"
+                                        y1="0"
+                                        x2="0"
+                                        y2="1"
+                                    >
+
+                                        <stop
+                                            offset="0%"
+                                            stop-color="#6750e9"
+                                            stop-opacity=".22"
+                                        />
+
+                                        <stop
+                                            offset="100%"
+                                            stop-color="#6750e9"
+                                            stop-opacity="0"
+                                        />
+
+                                    </linearGradient>
+
+                                </defs>
+
+
+                                <path
+                                    class="chart-area-fill"
+                                    d="
+                                    M0,190
+                                    C35,185 45,165 75,175
+                                    C110,185 120,155 150,160
+                                    C180,166 190,170 215,130
+                                    C240,92 265,145 290,145
+                                    C320,145 330,158 360,145
+                                    C390,130 400,105 430,100
+                                    C465,94 470,65 500,76
+                                    C530,85 550,80 580,105
+                                    C610,125 620,90 650,78
+                                    C675,68 690,55 700,60
+                                    L700,250
+                                    L0,250
+                                    Z
+                                    "
+                                ></path>
+
+
+                                <path
+                                    class="chart-line"
+                                    d="
+                                    M0,190
+                                    C35,185 45,165 75,175
+                                    C110,185 120,155 150,160
+                                    C180,166 190,170 215,130
+                                    C240,92 265,145 290,145
+                                    C320,145 330,158 360,145
+                                    C390,130 400,105 430,100
+                                    C465,94 470,65 500,76
+                                    C530,85 550,80 580,105
+                                    C610,125 620,90 650,78
+                                    C675,68 690,55 700,60
+                                    "
+                                ></path>
+
+
+                            </svg>
+
+
+                            <div class="chart-x-axis">
+
+                                <span>
+                                    مايو 1
+                                </span>
+
+                                <span>
+                                    مايو 8
+                                </span>
+
+                                <span>
+                                    مايو 15
+                                </span>
+
+                                <span>
+                                    مايو 22
+                                </span>
+
+                                <span>
+                                    مايو 29
+                                </span>
+
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+            </section>
+
+
+
+            <!-- =============================================
+                 Bottom Grid
+            ============================================== -->
+
+            <section class="dashboard-bottom-grid">
+
+
+                <!-- =========================================
+                     Latest Orders
+                ========================================== -->
+
+                <div class="dashboard-panel latest-orders-panel">
+
+
+                    <div class="panel-header">
+
+                        <h2>
+                            آخر الطلبات
+                        </h2>
+
+                        <button
+                            id="viewAllOrdersButton"
+                            class="panel-link"
+                            type="button"
+                        >
+                            عرض الكل
+                        </button>
+
+                    </div>
+
+
+
+                    <div class="orders-table-wrapper">
+
+
+                        <table class="dashboard-orders-table">
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+                                        الطلب
+                                    </th>
+
+                                    <th>
+                                        العميل
+                                    </th>
+
+                                    <th>
+                                        المبلغ
+                                    </th>
+
+                                    <th>
+                                        الحالة
+                                    </th>
+
+                                    <th>
+                                        التاريخ
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="dashboardOrdersTableBody">
+
+
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            #1024
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        أحمد خالد
+                                    </td>
+
+                                    <td>
+                                        1,250 ر.س
+                                    </td>
+
+                                    <td>
+                                        <span class="status completed">
+                                            مكتمل
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        2024-05-29
+                                    </td>
+
+                                </tr>
+
+
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            #1023
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        سارة محمد
+                                    </td>
+
+                                    <td>
+                                        860 ر.س
+                                    </td>
+
+                                    <td>
+                                        <span class="status processing">
+                                            قيد التنفيذ
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        2024-05-28
+                                    </td>
+
+                                </tr>
+
+
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            #1022
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        ناصر عبدالله
+                                    </td>
+
+                                    <td>
+                                        540 ر.س
+                                    </td>
+
+                                    <td>
+                                        <span class="status pending">
+                                            معلّق
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        2024-05-28
+                                    </td>
+
+                                </tr>
+
+
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            #1021
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        ريم علي
+                                    </td>
+
+                                    <td>
+                                        320 ر.س
+                                    </td>
+
+                                    <td>
+                                        <span class="status cancelled">
+                                            ملغي
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        2024-05-27
+                                    </td>
+
+                                </tr>
+
+
+                            </tbody>
+
+                        </table>
+
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     Best Products
+                ========================================== -->
+
+                <div class="dashboard-panel best-products-panel">
+
+
+                    <div class="panel-header">
+
+                        <h2>
+                            أفضل المنتجات
+                        </h2>
+
+                        <select
+                            class="period-select"
+                            id="bestProductsPeriod"
+                        >
+
+                            <option>
+                                هذا الشهر
+                            </option>
+
+                            <option>
+                                الشهر الماضي
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+
+                    <div
+                        class="best-products-list"
+                        id="dashboardBestProducts"
+                    >
+
+
+                        <div class="best-product-item">
+
+                            <span class="product-rank rank-1">
+                                1
+                            </span>
+
+                            <div class="best-product-image">
+                                🎧
+                            </div>
+
+                            <div class="best-product-info">
+
+                                <strong>
+                                    سماعة لاسلكية برو
+                                </strong>
+
+                                <span>
+                                    2,450 مبيع
+                                </span>
+
+                            </div>
+
+                            <span class="best-product-price">
+                                4,850 ر.س
+                            </span>
+
+                        </div>
+
+
+
+                        <div class="best-product-item">
+
+                            <span class="product-rank rank-2">
+                                2
+                            </span>
+
+                            <div class="best-product-image">
+                                📦
+                            </div>
+
+                            <div class="best-product-info">
+
+                                <strong>
+                                    شاحن سريع 65 واط
+                                </strong>
+
+                                <span>
+                                    1,892 مبيع
+                                </span>
+
+                            </div>
+
+                            <span class="best-product-price">
+                                3,420 ر.س
+                            </span>
+
+                        </div>
+
+
+
+                        <div class="best-product-item">
+
+                            <span class="product-rank rank-3">
+                                3
+                            </span>
+
+                            <div class="best-product-image">
+                                📱
+                            </div>
+
+                            <div class="best-product-info">
+
+                                <strong>
+                                    حافظة ذكية آيفون
+                                </strong>
+
+                                <span>
+                                    1,320 مبيع
+                                </span>
+
+                            </div>
+
+                            <span class="best-product-price">
+                                2,780 ر.س
+                            </span>
+
+                        </div>
+
+
+
+                        <div class="best-product-item">
+
+                            <span class="product-rank rank-4">
+                                4
+                            </span>
+
+                            <div class="best-product-image">
+                                👜
+                            </div>
+
+                            <div class="best-product-info">
+
+                                <strong>
+                                    حقيبة ظهر احترافية
+                                </strong>
+
+                                <span>
+                                    980 مبيع
+                                </span>
+
+                            </div>
+
+                            <span class="best-product-price">
+                                1,950 ر.س
+                            </span>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+            </section>
+
+
+        </main>
+
+
+
+        <!-- =================================================
+             Products
+        ================================================== -->
+
+        <section
+            class="products-admin"
+            id="productsAdmin"
+            style="display:none;"
+        >
+
+
+            <div class="products-admin-header">
+
+
+                <button
+                    class="back-admin"
+                    id="backToDashboard"
+                    type="button"
+                >
+                    ← رجوع
+                </button>
+
+
+                <div>
+
+                    <h2>
+                        إدارة المنتجات
+                    </h2>
+
+                    <p>
+                        إضافة وتعديل وحذف منتجات المتجر
+                    </p>
+
+                </div>
+
+
+                <button
+                    class="add-product-button"
+                    id="addProductButton"
+                    type="button"
+                >
+                    + إضافة منتج
+                </button>
+
+
+            </div>
+
+
+
+            <div
+                class="product-form-card"
+                id="productFormCard"
+                style="display:none;"
+            >
+
+
+                <h2>
+                    إضافة منتج جديد
+                </h2>
+
+                <p>
+                    أدخل بيانات المنتج ثم اضغط حفظ
+                </p>
+
+
+                <div class="product-form-grid">
+
+
+                    <div class="form-group">
+
+                        <label>
+                            التصنيف
+                        </label>
+
+                        <input
+                            id="productCategory"
+                            type="text"
+                            placeholder="مثال: حمايات"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            نوع المنتج
+                        </label>
+
+                        <input
+                            id="productProductType"
+                            type="text"
+                            placeholder="مثال: حماية شاشة"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            النوع
+                        </label>
+
+                        <input
+                            id="productType"
+                            type="text"
+                            placeholder="مثال: قزاز عادي"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            الشركة
+                        </label>
+
+                        <input
+                            id="productCompany"
+                            type="text"
+                            placeholder="مثال: Apple"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            الموديل
+                        </label>
+
+                        <input
+                            id="productModel"
+                            type="text"
+                            placeholder="مثال: iPhone 15"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            اللون
+                        </label>
+
+                        <input
+                            id="productColor"
+                            type="text"
+                            placeholder="مثال: شفاف"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            الكمية
+                        </label>
+
+                        <input
+                            id="productQuantity"
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            السعر
+                        </label>
+
+                        <input
+                            id="productPrice"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group image-upload-group">
+
+                        <label>
+                            صورة المنتج
+                        </label>
+
+                        <input
+                            type="file"
+                            id="productImage"
+                            accept="image/*"
+                        >
+
+                        <div id="productImagePreview"></div>
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="product-form-actions">
+
+                    <button
+                        id="saveProductButton"
+                        class="save-product"
+                        type="button"
+                    >
+                        حفظ المنتج
+                    </button>
+
+
+                    <button
+                        id="cancelProductButton"
+                        class="cancel-product"
+                        type="button"
+                    >
+                        إلغاء
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="productFormMessage"
+                    class="product-form-message"
+                ></div>
+
+
+            </div>
+
+
+
+            <div class="admin-search">
+
+                <input
+                    type="text"
+                    id="adminProductSearch"
+                    placeholder="ابحث عن موديل أو شركة..."
+                >
+
+            </div>
+
+
+            <div
+                class="admin-products"
+                id="adminProducts"
+            ></div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             Categories
+        ================================================== -->
+
+        <section
+            class="categories-admin"
+            id="categoriesAdmin"
+            style="display:none;"
+        >
+
+
+            <div class="categories-admin-header">
+
+
+                <button
+                    class="back-admin"
+                    id="backFromCategories"
+                    type="button"
+                >
+                    ← رجوع
+                </button>
+
+
+                <div>
+
+                    <h2>
+                        إدارة التصنيفات
+                    </h2>
+
+                    <p>
+                        إضافة وتعديل وحذف تصنيفات المتجر
+                    </p>
+
+                </div>
+
+
+                <button
+                    class="add-product-button"
+                    id="addCategoryButton"
+                    type="button"
+                >
+                    + إضافة تصنيف
+                </button>
+
+
+            </div>
+
+
+
+            <div
+                class="category-form-card"
+                id="categoryFormCard"
+                style="display:none;"
+            >
+
+                <h3>
+                    إضافة تصنيف
+                </h3>
+
+
+                <input
+                    id="categoryName"
+                    type="text"
+                    placeholder="اسم التصنيف"
+                >
+
+
+                <input
+                    id="categoryIcon"
+                    type="text"
+                    placeholder="الأيقونة مثال: 📱"
+                >
+
+
+                <div class="category-form-actions">
+
+                    <button
+                        id="saveCategoryButton"
+                        class="save-product"
+                        type="button"
+                    >
+                        حفظ التصنيف
+                    </button>
+
+
+                    <button
+                        id="cancelCategoryButton"
+                        class="cancel-product"
+                        type="button"
+                    >
+                        إلغاء
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="categoryFormMessage"
+                    class="product-form-message"
+                ></div>
+
+
+            </div>
+
+
+            <div
+                class="categories-list"
+                id="categoriesList"
+            ></div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             Orders
+        ================================================== -->
+
+        <section
+            class="orders-admin"
+            id="ordersAdmin"
+            style="display:none;"
+        >
+
+
+            <div class="orders-admin-header">
+
+
+                <button
+                    class="back-admin"
+                    id="backFromOrders"
+                    type="button"
+                >
+                    ← رجوع
+                </button>
+
+
+                <div>
+
+                    <h2>
+                        إدارة الطلبات
+                    </h2>
+
+                    <p>
+                        مشاهدة وإدارة طلبات العملاء
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+            <div
+                class="admin-orders"
+                id="adminOrders"
+            ></div>
+
+
+        </section>
+
+
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     نافذة تعديل الطلب
+========================================================= -->
+
+<div
+    id="editOrderModal"
+    class="edit-order-modal"
+    style="display:none;"
+>
+
+
+    <div class="edit-order-box">
+
+
+        <div class="edit-order-header">
+
+
+            <div>
+
+                <h2>
+                    تعديل الطلب
+                </h2>
+
+                <p id="editOrderNumber">
+                    الطلب #
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="closeEditOrderButton"
+                class="close-edit-order"
+            >
+                ✕
+            </button>
+
+
+        </div>
+
+
+
+        <!-- بيانات العميل -->
+
+        <div class="edit-order-section">
+
+
+            <h3>
+                بيانات العميل
+            </h3>
+
+
+            <div class="edit-order-grid">
+
+
+                <div class="edit-order-field">
+
+                    <label>
+                        اسم العميل
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editOrderCustomerName"
+                    >
+
+                </div>
+
+
+                <div class="edit-order-field">
+
+                    <label>
+                        رقم الجوال
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editOrderCustomerPhone"
+                    >
+
+                </div>
+
+
+                <div class="edit-order-field">
+
+                    <label>
+                        اسم المندوب
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editOrderDriverName"
+                    >
+
+                </div>
+
+
+                <div class="edit-order-field">
+
+                    <label>
+                        رقم المندوب
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editOrderDriverNumber"
+                    >
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- منتجات الطلب -->
+
+        <div class="edit-order-section">
+
+
+            <div class="edit-order-items-title">
+
+
+                <h3>
+                    منتجات الطلب
+                </h3>
+
+
+                <button
+                    type="button"
+                    id="addOrderItemButton"
+                    class="add-order-item-button"
+                >
+                    + إضافة منتج
+                </button>
+
+
+            </div>
+
+
+            <div
+                id="editOrderItems"
+                class="edit-order-items"
+            ></div>
+
+
+        </div>
+
+
+
+        <!-- الإجمالي -->
+
+        <div class="edit-order-total">
+
+            <span>
+                إجمالي الطلب
+            </span>
+
+
+            <strong>
+
+                <span id="editOrderTotal">
+                    0.00
+                </span>
+
+                ر.س
+
+            </strong>
+
+        </div>
+
+
+
+        <!-- الأزرار -->
+
+        <div class="edit-order-actions">
+
+
+            <button
+                type="button"
+                id="saveOrderEditButton"
+                class="save-order-edit"
+            >
+                حفظ التعديلات
+            </button>
+
+
+            <button
+                type="button"
+                id="cancelOrderEditButton"
+                class="cancel-order-edit"
+            >
+                إلغاء
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="editOrderMessage"
+            class="edit-order-message"
+        ></div>
+
+
+    </div>
+
+</div>
+
+
+
+
+<!-- =========================================================
+     ربط عناصر التصميم الجديدة بالوظائف الموجودة
+     لا يغير وظائف admin.js
+========================================================= -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+
+    const productsButton =
+        document.getElementById("productsButton");
+
+    const ordersButton =
+        document.getElementById("ordersButton");
+
+    const categoriesButton =
+        document.getElementById("categoriesButton");
+
+
+    const productsSidebarButton =
+        document.getElementById("productsSidebarButton");
+
+    const ordersSidebarButton =
+        document.getElementById("ordersSidebarButton");
+
+    const categoriesSidebarButton =
+        document.getElementById("categoriesSidebarButton");
+
+
+    const dashboardButton =
+        document.getElementById("dashboardButton");
+
+
+    const addProductQuickButton =
+        document.getElementById("addProductQuickButton");
+
+
+    const viewAllOrdersButton =
+        document.getElementById("viewAllOrdersButton");
+
+
+    const backToDashboard =
+        document.getElementById("backToDashboard");
+
+
+    const backFromOrders =
+        document.getElementById("backFromOrders");
+
+
+    const backFromCategories =
+        document.getElementById("backFromCategories");
+
+
+    function clickIfExists(element) {
+
+        if (element) {
+            element.click();
+        }
+
+    }
+
+
+    if (productsSidebarButton) {
+
+        productsSidebarButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(productsButton);
+
+            }
+        );
+
+    }
+
+
+    if (ordersSidebarButton) {
+
+        ordersSidebarButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(ordersButton);
+
+            }
+        );
+
+    }
+
+
+    if (categoriesSidebarButton) {
+
+        categoriesSidebarButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(categoriesButton);
+
+            }
+        );
+
+    }
+
+
+    if (addProductQuickButton) {
+
+        addProductQuickButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(productsButton);
+
+                setTimeout(function () {
+
+                    const addButton =
+                        document.getElementById("addProductButton");
+
+                    clickIfExists(addButton);
+
+                }, 150);
+
+            }
+        );
+
+    }
+
+
+    if (viewAllOrdersButton) {
+
+        viewAllOrdersButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(ordersButton);
+
+            }
+        );
+
+    }
+
+
+    if (dashboardButton) {
+
+        dashboardButton.addEventListener(
+            "click",
+            function () {
+
+                const dashboard =
+                    document.getElementById("dashboardContent");
+
+                const products =
+                    document.getElementById("productsAdmin");
+
+                const categories =
+                    document.getElementById("categoriesAdmin");
+
+                const orders =
+                    document.getElementById("ordersAdmin");
+
+
+                if (dashboard) {
+                    dashboard.style.display = "";
+                }
+
+                if (products) {
+                    products.style.display = "none";
+                }
+
+                if (categories) {
+                    categories.style.display = "none";
+                }
+
+                if (orders) {
+                    orders.style.display = "none";
+                }
+
+
+                document
+                    .querySelectorAll(".sidebar-item")
+                    .forEach(function (item) {
+
+                        item.classList.remove("active");
+
+                    });
+
+
+                dashboardButton.classList.add("active");
+
+            }
+        );
+
+    }
+
+
+    function watchSection(sectionId) {
+
+        const section =
+            document.getElementById(sectionId);
+
+        if (!section) {
+            return;
+        }
+
+
+        const observer =
+            new MutationObserver(function () {
+
+                const visible =
+                    section.style.display !== "none";
+
+
+                if (visible) {
+
+                    const dashboard =
+                        document.getElementById(
+                            "dashboardContent"
+                        );
+
+
+                    if (dashboard) {
+                        dashboard.style.display = "none";
+                    }
+
+
+                    document
+                        .querySelectorAll(".sidebar-item")
+                        .forEach(function (item) {
+
+                            item.classList.remove("active");
+
+                        });
+
+
+                    if (sectionId === "productsAdmin") {
+
+                        productsSidebarButton &&
+                            productsSidebarButton.classList.add(
+                                "active"
+                            );
+
+                    }
+
+
+                    if (sectionId === "ordersAdmin") {
+
+                        ordersSidebarButton &&
+                            ordersSidebarButton.classList.add(
+                                "active"
+                            );
+
+                    }
+
+
+                    if (sectionId === "categoriesAdmin") {
+
+                        categoriesSidebarButton &&
+                            categoriesSidebarButton.classList.add(
+                                "active"
+                            );
+
+                    }
+
+                }
+
+            });
+
+
+        observer.observe(
+            section,
+            {
+                attributes: true,
+                attributeFilter: ["style"]
+            }
+        );
+
+    }
+
+
+    watchSection("productsAdmin");
+    watchSection("categoriesAdmin");
+    watchSection("ordersAdmin");
+
+
+});
+
+</script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- إعداد Supabase -->
+    <script src="supabase.js"></script>
+
+    <!-- وظائف لوحة الإدارة -->
+   <!-- =========================================================
+     وظائف لوحة الإدارة الأصلية
+========================================================= -->
+
+<script src="admin.js"></script>
+
+<script src="./no-zoom.js"></script>
+
+
+<!-- =========================================================
+     ربط الواجهة الجديدة بوظائف لوحة الإدارة القديمة
+========================================================= -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    /*
+     * الأزرار الأصلية التي يتعامل معها admin.js
+     */
+    const productsButton =
+        document.getElementById("productsButton");
+
+    const ordersButton =
+        document.getElementById("ordersButton");
+
+    const categoriesButton =
+        document.getElementById("categoriesButton");
+
+
+    /*
+     * أزرار الـ Sidebar الجديدة
+     */
+    const productsSidebarButton =
+        document.getElementById("productsSidebarButton");
+
+    const ordersSidebarButton =
+        document.getElementById("ordersSidebarButton");
+
+    const categoriesSidebarButton =
+        document.getElementById("categoriesSidebarButton");
+
+    const dashboardButton =
+        document.getElementById("dashboardButton");
+
+
+    /*
+     * الإجراءات السريعة
+     */
+    const addProductQuickButton =
+        document.getElementById("addProductQuickButton");
+
+    const showInventoryButton =
+        document.getElementById("showInventoryButton");
+
+    const newOrderQuickButton =
+        document.getElementById("newOrderQuickButton");
+
+    const salesReportButton =
+        document.getElementById("salesReportButton");
+
+    const viewAllOrdersButton =
+        document.getElementById("viewAllOrdersButton");
+
+
+    /*
+     * أزرار الرجوع
+     */
+    const backToDashboard =
+        document.getElementById("backToDashboard");
+
+    const backFromOrders =
+        document.getElementById("backFromOrders");
+
+    const backFromCategories =
+        document.getElementById("backFromCategories");
+
+
+    /*
+     * الأقسام
+     */
+    const dashboardContent =
+        document.getElementById("dashboardContent");
+
+    const productsAdmin =
+        document.getElementById("productsAdmin");
+
+    const ordersAdmin =
+        document.getElementById("ordersAdmin");
+
+    const categoriesAdmin =
+        document.getElementById("categoriesAdmin");
+
+
+    /*
+     * دالة آمنة للضغط على زر
+     */
+    function clickIfExists(element) {
+
+        if (element) {
+            element.click();
+        }
+
+    }
+
+
+    /*
+     * تحديث الـ Sidebar
+     */
+    function setActiveSidebar(activeButton) {
+
+        document
+            .querySelectorAll(".sidebar-item")
+            .forEach(function (item) {
+
+                item.classList.remove("active");
+
+            });
+
+
+        if (activeButton) {
+            activeButton.classList.add("active");
+        }
+
+    }
+
+
+    /*
+     * إظهار الرئيسية
+     */
+    function showDashboard() {
+
+        if (dashboardContent) {
+            dashboardContent.style.display = "";
+        }
+
+        if (productsAdmin) {
+            productsAdmin.style.display = "none";
+        }
+
+        if (ordersAdmin) {
+            ordersAdmin.style.display = "none";
+        }
+
+        if (categoriesAdmin) {
+            categoriesAdmin.style.display = "none";
+        }
+
+
+        setActiveSidebar(dashboardButton);
+
+    }
+
+
+    /*
+     * المنتجات
+     */
+    if (productsSidebarButton) {
+
+        productsSidebarButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(productsButton);
+
+                setTimeout(function () {
+
+                    if (productsAdmin) {
+                        productsAdmin.style.display = "";
+                    }
+
+                    if (dashboardContent) {
+                        dashboardContent.style.display = "none";
+                    }
+
+                    if (ordersAdmin) {
+                        ordersAdmin.style.display = "none";
+                    }
+
+                    if (categoriesAdmin) {
+                        categoriesAdmin.style.display = "none";
+                    }
+
+                    setActiveSidebar(
+                        productsSidebarButton
+                    );
+
+                }, 50);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * الطلبات
+     */
+    if (ordersSidebarButton) {
+
+        ordersSidebarButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(ordersButton);
+
+                setTimeout(function () {
+
+                    if (ordersAdmin) {
+                        ordersAdmin.style.display = "";
+                    }
+
+                    if (dashboardContent) {
+                        dashboardContent.style.display = "none";
+                    }
+
+                    if (productsAdmin) {
+                        productsAdmin.style.display = "none";
+                    }
+
+                    if (categoriesAdmin) {
+                        categoriesAdmin.style.display = "none";
+                    }
+
+                    setActiveSidebar(
+                        ordersSidebarButton
+                    );
+
+                }, 50);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * التصنيفات
+     */
+    if (categoriesSidebarButton) {
+
+        categoriesSidebarButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(categoriesButton);
+
+                setTimeout(function () {
+
+                    if (categoriesAdmin) {
+                        categoriesAdmin.style.display = "";
+                    }
+
+                    if (dashboardContent) {
+                        dashboardContent.style.display = "none";
+                    }
+
+                    if (productsAdmin) {
+                        productsAdmin.style.display = "none";
+                    }
+
+                    if (ordersAdmin) {
+                        ordersAdmin.style.display = "none";
+                    }
+
+                    setActiveSidebar(
+                        categoriesSidebarButton
+                    );
+
+                }, 50);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * زر إضافة منتج من الصفحة الرئيسية
+     */
+    if (addProductQuickButton) {
+
+        addProductQuickButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(productsButton);
+
+                setTimeout(function () {
+
+                    const addProductButton =
+                        document.getElementById(
+                            "addProductButton"
+                        );
+
+                    clickIfExists(addProductButton);
+
+                }, 150);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * عرض المخزون
+     *
+     * المخزون عندنا موجود داخل إدارة المنتجات،
+     * لذلك ننقل المستخدم إليها.
+     */
+    if (showInventoryButton) {
+
+        showInventoryButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(productsButton);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * عرض كل الطلبات
+     */
+    if (viewAllOrdersButton) {
+
+        viewAllOrdersButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(ordersButton);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * الطلب الجديد
+     *
+     * لا نغيّر وظيفة admin.js الأصلية.
+     * إذا كان عنده زر/وظيفة لإنشاء الطلب، نربطه بها لاحقًا.
+     */
+    if (newOrderQuickButton) {
+
+        newOrderQuickButton.addEventListener(
+            "click",
+            function () {
+
+                clickIfExists(ordersButton);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * تقرير المبيعات
+     *
+     * حاليًا نرجع للوحة الرئيسية لأن
+     * صفحة التقارير لم تُنقل بعد من الكود القديم.
+     */
+    if (salesReportButton) {
+
+        salesReportButton.addEventListener(
+            "click",
+            function () {
+
+                showDashboard();
+
+            }
+        );
+
+    }
+
+
+    /*
+     * زر الرئيسية
+     */
+    if (dashboardButton) {
+
+        dashboardButton.addEventListener(
+            "click",
+            function () {
+
+                showDashboard();
+
+            }
+        );
+
+    }
+
+
+    /*
+     * رجوع من المنتجات
+     */
+    if (backToDashboard) {
+
+        backToDashboard.addEventListener(
+            "click",
+            function () {
+
+                showDashboard();
+
+            }
+        );
+
+    }
+
+
+    /*
+     * رجوع من الطلبات
+     */
+    if (backFromOrders) {
+
+        backFromOrders.addEventListener(
+            "click",
+            function () {
+
+                showDashboard();
+
+            }
+        );
+
+    }
+
+
+    /*
+     * رجوع من التصنيفات
+     */
+    if (backFromCategories) {
+
+        backFromCategories.addEventListener(
+            "click",
+            function () {
+
+                showDashboard();
+
+            }
+        );
+
+    }
+
+
+    /*
+     * مراقبة تغيير ظهور الأقسام من admin.js
+     *
+     * إذا admin.js أظهر قسمًا، نخفي Dashboard
+     * ونفعّل الزر المناسب في الـ Sidebar.
+     */
+    function watchSection(
+        section,
+        sidebarButton
+    ) {
+
+        if (!section) {
+            return;
+        }
+
+
+        const observer =
+            new MutationObserver(function () {
+
+                const isVisible =
+                    section.style.display !== "none";
+
+
+                if (!isVisible) {
+                    return;
+                }
+
+
+                if (dashboardContent) {
+                    dashboardContent.style.display = "none";
+                }
+
+
+                document
+                    .querySelectorAll(".sidebar-item")
+                    .forEach(function (item) {
+
+                        item.classList.remove("active");
+
+                    });
+
+
+                if (sidebarButton) {
+                    sidebarButton.classList.add("active");
+                }
+
+            });
+
+
+        observer.observe(
+            section,
+            {
+                attributes: true,
+                attributeFilter: ["style"]
+            }
+        );
+
+    }
+
+
+    watchSection(
+        productsAdmin,
+        productsSidebarButton
+    );
+
+
+    watchSection(
+        ordersAdmin,
+        ordersSidebarButton
+    );
+
+
+    watchSection(
+        categoriesAdmin,
+        categoriesSidebarButton
+    );
+
+});
+
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+
+    <title>الطلبات</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+
+
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Cairo", sans-serif;
+            background: #f8f9fd;
+            color: #171827;
+            padding-bottom: 40px;
+        }
+
+        .header {
+            width: min(1100px, calc(100% - 32px));
+            margin: auto;
+            padding: 22px 0;
+
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-button {
+            width: 46px;
+            height: 46px;
+
+            border: none;
+            border-radius: 15px;
+
+            background: white;
+
+            box-shadow: 0 8px 25px rgba(50,50,100,.07);
+
+            font-size: 23px;
+            cursor: pointer;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .header p {
+            font-size: 11px;
+            color: #858796;
+        }
+
+        .content {
+            width: min(1100px, calc(100% - 32px));
+            margin: auto;
+        }
+
+        .orders {
+            display: grid;
+            gap: 15px;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 22px;
+            padding: 18px;
+
+            display: flex;
+            align-items: center;
+            gap: 15px;
+
+            box-shadow: 0 8px 25px rgba(50,50,100,.05);
+        }
+
+        .order-image {
+            width: 75px;
+            height: 75px;
+
+            border-radius: 18px;
+            background: #eeeaff;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 35px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .order-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .order-info {
+            flex: 1;
+        }
+
+        .order-info h3 {
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .order-info p {
+            font-size: 11px;
+            color: #858796;
+        }
+
+        .price {
+            margin-top: 7px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #6557ed;
+        }
+
+        .delete-button {
+            width: 40px;
+            height: 40px;
+
+            border: none;
+            border-radius: 13px;
+
+            background: #fff0f3;
+            color: #ff4d67;
+
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .empty {
+            background: white;
+            border-radius: 22px;
+            padding: 50px 20px;
+
+            text-align: center;
+            color: #858796;
+        }
+
+        .empty-icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <header class="header">
+
+        <button
+            class="back-button"
+            onclick="history.back()"
+        >
+            →
+        </button>
+
+        <div>
+            <h1>🛍️ الطلبات</h1>
+
+            <p>
+                المنتجات التي اخترتها
+            </p>
+        </div>
+
+    </header>
+
+
+   <main class="content">
+
+    <div
+        class="orders"
+        id="orders"
+    ></div>
+
+<button onclick="clearCart()">
+    🗑️ حذف جميع منتجات السلة
+</button>
+
+
+
+<div
+    id="notifications"
+    style="
+        margin-top:15px;
+    "
+></div>
+<button
+    onclick="showPreviousOrders()"
+    style="
+        width:100%;
+        height:55px;
+        margin-top:15px;
+        border:none;
+        border-radius:17px;
+        background:white;
+        color:#6557ed;
+        font-family:inherit;
+        font-size:15px;
+        font-weight:800;
+        cursor:pointer;
+        box-shadow:0 8px 25px rgba(50,50,100,.05);
+    "
+>
+    📋 الطلبات السابقة
+</button>
+
+
+<div
+    style="
+        background:white;
+        border-radius:22px;
+        padding:20px;
+        margin-top:20px;
+        box-shadow:0 8px 25px rgba(50,50,100,.05);
+    "
+>
+
+    <!-- اسم العميل -->
+
+    <label
+        for="customerName"
+        style="
+            display:block;
+            font-size:14px;
+            font-weight:800;
+            margin-bottom:10px;
+        "
+    >
+        👤 اسم العميل
+    </label>
+
+    <input
+        id="customerName"
+        type="text"
+        placeholder="اكتب اسم العميل"
+        style="
+            width:100%;
+            height:50px;
+            border:1px solid #e5e5e5;
+            border-radius:14px;
+            padding:0 15px;
+            font-family:inherit;
+            font-size:14px;
+            outline:none;
+            margin-bottom:18px;
+        "
+    >
+
+
+    <!-- رقم المندوب -->
+
+    <label
+        for="driverNumber"
+        style="
+            display:block;
+            font-size:14px;
+            font-weight:800;
+            margin-bottom:10px;
+        "
+    >
+        🚚 رقم المندوب
+    </label>
+
+    <input
+        id="driverNumber"
+        type="text"
+        inputmode="numeric"
+        placeholder="اكتب رقم المندوب"
+        style="
+            width:100%;
+            height:50px;
+            border:1px solid #e5e5e5;
+            border-radius:14px;
+            padding:0 15px;
+            font-family:inherit;
+            font-size:14px;
+            outline:none;
+        "
+    >
+
+    <p
+        id="driverMessage"
+        style="
+            margin-top:8px;
+            font-size:12px;
+            font-weight:700;
+        "
+    ></p>
+
+
+    <!-- موقع العميل -->
+
+    <label
+        style="
+            display:block;
+            font-size:14px;
+            font-weight:800;
+            margin-top:20px;
+            margin-bottom:10px;
+        "
+    >
+        📍 موقع العميل
+    </label>
+
+    <button
+        type="button"
+        onclick="openLocationMap()"
+        style="
+            width:100%;
+            height:52px;
+            border:none;
+            border-radius:14px;
+            background:#eeeaff;
+            color:#6557ed;
+            font-family:inherit;
+            font-size:14px;
+            font-weight:800;
+            cursor:pointer;
+        "
+    >
+        📍 تحديد الموقع من الخريطة
+    </button>
+
+    <div
+        id="locationText"
+        style="
+            margin-top:10px;
+            padding:12px;
+            border-radius:12px;
+            background:#f7f7f7;
+            color:#777;
+            font-size:12px;
+            text-align:center;
+        "
+    >
+        لم يتم تحديد الموقع
+    </div>
+
+</div>
+
+
+<button
+    id="submitOrderButton"
+    onclick="submitOrder()"
+    style="
+        width:100%;
+        height:55px;
+        margin-top:15px;
+        border:none;
+        border-radius:17px;
+        background:#6557ed;
+        color:white;
+        font-family:inherit;
+        font-size:15px;
+        font-weight:800;
+        cursor:pointer;
+    "
+>
+    تقديم الطلب
+</button>
+
+
+<div
+    id="previousOrders"
+    style="margin-top:20px;"
+></div>
+</main>
+
+<script>
+
+async function loadOrders() {
+
+    const container = document.getElementById("orders");
+
+    container.innerHTML = `
+        <div class="empty">
+            جاري تحميل الطلبات...
+        </div>
+    `;
+
+
+    // =========================
+    // التأكد من تسجيل الدخول
+    // =========================
+
+    const {
+        data: { user },
+        error: userError
+    } = await supabaseClient.auth.getUser();
+
+
+    if (userError || !user) {
+
+        container.innerHTML = `
+            <div class="empty">
+
+                <div class="empty-icon">
+                    🔐
+                </div>
+
+                <h3>
+                    سجل دخولك أولاً
+                </h3>
+
+                <p>
+                    يجب تسجيل الدخول لعرض السلة
+                </p>
+
+                <button
+                    onclick="window.location.href='login.html'"
+                    style="
+                        margin-top:15px;
+                        padding:12px 20px;
+                        border:none;
+                        border-radius:12px;
+                        background:#6557ed;
+                        color:white;
+                        font-family:inherit;
+                        font-weight:800;
+                        cursor:pointer;
+                    "
+                >
+                    تسجيل الدخول
+                </button>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // =========================
+    // جلب طلب المستخدم
+    // =========================
+
+    const {
+        data: orders,
+        error: ordersError
+    } = await supabaseClient
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "جديد")
+        .order("id", {
+            ascending: false
+        })
+        .limit(1);
+
+
+    if (ordersError) {
+
+        console.error(ordersError);
+
+        container.innerHTML = `
+            <div class="empty">
+                حدث خطأ أثناء تحميل الطلبات
+            </div>
+        `;
+
+        return;
+    }
+
+
+    if (!orders || orders.length === 0) {
+
+        container.innerHTML = `
+            <div class="empty">
+
+                <div class="empty-icon">
+                    🛍️
+                </div>
+
+                <h3>
+                    السلة فارغة
+                </h3>
+
+                <p>
+                    لم تتم إضافة أي منتجات بعد
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const order = orders[0];
+
+
+    // =========================
+    // جلب المنتجات
+    // =========================
+
+    const {
+        data: items,
+        error: itemsError
+    } = await supabaseClient
+        .from("order_items")
+        .select("*")
+        .eq("order_id", order.id)
+        .order("id", {
+            ascending: true
+        });
+
+
+    if (itemsError) {
+
+        console.error(itemsError);
+
+        container.innerHTML = `
+            <div class="empty">
+                حدث خطأ أثناء تحميل المنتجات
+            </div>
+        `;
+
+        return;
+    }
+
+
+    if (!items || items.length === 0) {
+
+        container.innerHTML = `
+            <div class="empty">
+
+                <div class="empty-icon">
+                    🛍️
+                </div>
+
+                <h3>
+                    السلة فارغة
+                </h3>
+
+                <p>
+                    لم تتم إضافة أي منتجات بعد
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // =========================
+    // عرض المنتجات
+    // =========================
+
+    container.innerHTML = "";
+
+
+    items.forEach(item => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "order-card";
+
+
+        card.innerHTML = `
+
+            <div class="order-image">
+
+                ${
+                    item.image
+                    ?
+                    `<img
+                        src="${item.image}"
+                        alt="${item.model || ""}"
+                    >`
+                    :
+                    "📱"
+                }
+
+            </div>
+
+
+            <div class="order-info">
+
+                <h3>
+    ${item.type || "بدون نوع منتج"}
+</h3>
+
+<p>
+    ${
+        item.model
+        ? "الموديل: " + item.model
+        : ""
+    }
+</p>
+
+<p>
+    ${
+        item.product_code
+        ? "كود المنتج: " + item.product_code
+        : ""
+    }
+</p>
+
+                <p>
+                    ${
+                        item.type
+                        ? "النوع: " + item.type
+                        : ""
+                    }
+                </p>
+
+                <p>
+                    ${
+                        item.company
+                        ? "الشركة: " + item.company
+                        : ""
+                    }
+                </p>
+
+                <p>
+                    ${
+                        item.color
+                        ? "اللون: " + item.color
+                        : ""
+                    }
+                </p>
+
+                <div class="price">
+                    ${item.price ?? 0} ر.س
+                </div>
+
+
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    gap:8px;
+                    margin-top:10px;
+                ">
+
+                    <button
+                        onclick="changeQuantity(${item.id}, -1)"
+                        style="
+                            width:30px;
+                            height:30px;
+                            border:none;
+                            border-radius:10px;
+                            background:#eeeaff;
+                            color:#6557ed;
+                            font-size:18px;
+                            cursor:pointer;
+                        "
+                    >
+                        −
+                    </button>
+
+                    <strong>
+                        ${item.quantity || 1}
+                    </strong>
+
+                    <button
+                        onclick="changeQuantity(${item.id}, 1)"
+                        style="
+                            width:30px;
+                            height:30px;
+                            border:none;
+                            border-radius:10px;
+                            background:#6557ed;
+                            color:white;
+                            font-size:18px;
+                            cursor:pointer;
+                        "
+                    >
+                        +
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="delete-button"
+                onclick="removeOrderItem(${item.id})"
+            >
+                🗑️
+            </button>
+
+        `;
+
+
+        container.appendChild(card);
+
+    });
+
+
+    // =========================
+    // الإجمالي
+    // =========================
+
+    const totalBox =
+        document.createElement("div");
+
+    totalBox.style.cssText = `
+        background:white;
+        border-radius:22px;
+        padding:20px;
+        margin-top:15px;
+        box-shadow:0 8px 25px rgba(50,50,100,.05);
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    `;
+
+
+    totalBox.innerHTML = `
+
+        <strong>
+            إجمالي الطلب
+        </strong>
+
+        <strong style="
+            color:#6557ed;
+            font-size:18px;
+        ">
+            ${order.total ?? 0} ر.س
+        </strong>
+
+    `;
+
+
+    container.appendChild(totalBox);
+
+}
+
+
+// =========================
+// حذف منتج
+// =========================
+
+async function removeOrderItem(itemId) {
+
+    const { error } =
+        await supabaseClient
+            .from("order_items")
+            .delete()
+            .eq("id", itemId);
+
+
+    if (error) {
+
+        console.error(error);
+
+        alert("حدث خطأ أثناء حذف المنتج");
+
+        return;
+    }
+
+
+    await updateOrderTotal();
+
+  loadOrders();
+loadNotifications();
+}
+
+
+// =========================
+// تغيير الكمية
+// =========================
+
+async function changeQuantity(itemId, change) {
+
+    const {
+        data: item,
+        error
+    } = await supabaseClient
+        .from("order_items")
+        .select("*")
+        .eq("id", itemId)
+        .single();
+
+
+    if (error || !item) {
+
+        alert("حدث خطأ أثناء تعديل الكمية");
+
+        return;
+    }
+
+
+    const newQuantity =
+        (item.quantity || 1) + change;
+
+
+    if (newQuantity <= 0) {
+
+        await removeOrderItem(itemId);
+
+        return;
+    }
+
+
+    const { error: updateError } =
+        await supabaseClient
+            .from("order_items")
+            .update({
+                quantity: newQuantity
+            })
+            .eq("id", itemId);
+
+
+    if (updateError) {
+
+        console.error(updateError);
+
+        alert("حدث خطأ أثناء تعديل الكمية");
+
+        return;
+    }
+
+
+    await updateOrderTotal();
+
+    loadOrders();
+}
+
+
+// =========================
+// تحديث الإجمالي
+// =========================
+
+async function updateOrderTotal() {
+
+    const {
+        data: { user }
+    } = await supabaseClient.auth.getUser();
+
+
+    if (!user) return;
+
+
+    const {
+        data: orders
+    } = await supabaseClient
+        .from("orders")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "جديد")
+        .order("id", {
+            ascending: false
+        })
+        .limit(1);
+
+
+    if (!orders || orders.length === 0) return;
+
+
+    const orderId = orders[0].id;
+
+
+    const {
+        data: items
+    } = await supabaseClient
+        .from("order_items")
+        .select("quantity, price")
+        .eq("order_id", orderId);
+
+
+    const total =
+        (items || []).reduce(
+            (sum, item) =>
+                sum +
+                (
+                    Number(item.price) || 0
+                ) *
+                (
+                    Number(item.quantity) || 1
+                ),
+            0
+        );
+
+
+    await supabaseClient
+        .from("orders")
+        .update({
+            total: total
+        })
+        .eq("id", orderId);
+
+}
+
+
+loadOrders();
+
+
+
+
+
+async function submitOrder() {
+
+    try {
+const customerNameInput =
+    document.getElementById("customerName");
+
+const customerName =
+    customerNameInput.value.trim();
+        // =========================
+        // رقم المندوب
+        // =========================
+
+        const driverInput =
+            document.getElementById("driverNumber");
+
+        const driverMessage =
+            document.getElementById("driverMessage");
+
+        const driverNumber =
+            driverInput.value.trim();
+
+// =========================
+// التأكد من اسم العميل
+// =========================
+
+if (!customerName) {
+
+    alert("يجب كتابة اسم العميل أولاً");
+
+    customerNameInput.focus();
+
+    return;
+}
+
+
+        // =========================
+        // التأكد من إدخال الرقم
+        // =========================
+
+        if (!driverNumber) {
+
+            driverMessage.textContent =
+                "⚠️ يجب كتابة رقم المندوب أولاً";
+
+            driverMessage.style.color =
+                "#e05265";
+
+            driverInput.focus();
+
+            return;
+        }
+
+
+        driverMessage.textContent =
+            "جاري التحقق من رقم المندوب...";
+
+        driverMessage.style.color =
+            "#6557ed";
+
+
+        // =========================
+        // البحث عن المندوب
+        // =========================
+
+        const {
+            data: driver,
+            error: driverError
+        } = await supabaseClient
+            .from("drivers")
+            .select("id, driver_number, name")
+            .eq("driver_number", driverNumber)
+            .maybeSingle();
+
+
+        if (driverError) {
+
+            console.error(driverError);
+
+            driverMessage.textContent =
+                "حدث خطأ أثناء التحقق من رقم المندوب";
+
+            driverMessage.style.color =
+                "#e05265";
+
+            return;
+        }
+
+
+        // =========================
+        // الرقم غير موجود
+        // =========================
+
+        if (!driver) {
+
+            driverMessage.textContent =
+                "❌ رقم المندوب غير صحيح";
+
+            driverMessage.style.color =
+                "#e05265";
+
+            driverInput.focus();
+
+            return;
+        }
+
+
+        // =========================
+        // المندوب صحيح
+        // =========================
+
+        driverMessage.textContent =
+            `✅ المندوب: ${driver.name}`;
+
+        driverMessage.style.color =
+            "#2e9d69";
+
+
+        // =========================
+        // التأكد من تسجيل الدخول
+        // =========================
+
+        const {
+            data: { user },
+            error: userError
+        } = await supabaseClient.auth.getUser();
+
+
+        if (userError || !user) {
+
+            alert("يجب تسجيل الدخول أولاً");
+
+            window.location.href =
+                "login.html";
+
+            return;
+        }
+
+
+        // =========================
+        // البحث عن السلة الحالية
+        // =========================
+
+        const {
+            data: orders,
+            error: ordersError
+        } = await supabaseClient
+            .from("orders")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("status", "جديد")
+            .order("id", {
+                ascending: false
+            })
+            .limit(1);
+
+
+        if (ordersError) {
+
+            console.error(ordersError);
+
+            alert(
+                "حدث خطأ أثناء البحث عن الطلب"
+            );
+
+            return;
+        }
+
+
+        // =========================
+        // لا توجد سلة
+        // =========================
+
+        if (!orders || orders.length === 0) {
+
+            alert("السلة فارغة");
+
+            return;
+        }
+
+
+        const order = orders[0];
+
+
+        // =========================
+        // جلب المنتجات
+        // =========================
+
+        const {
+            data: items,
+            error: itemsError
+        } = await supabaseClient
+            .from("order_items")
+            .select("*")
+            .eq("order_id", order.id);
+
+
+        if (itemsError) {
+
+            console.error(itemsError);
+
+            alert(
+                "حدث خطأ أثناء قراءة المنتجات"
+            );
+
+            return;
+        }
+
+
+        if (!items || items.length === 0) {
+
+            alert("السلة فارغة");
+
+            return;
+        }
+
+
+        // =========================
+        // تقديم الطلب
+        // =========================
+
+       const {
+    error: updateError
+} = await supabaseClient
+    .from("orders")
+    .update({
+
+        status: "مقدم",
+
+        driver_number:
+            driver.driver_number,
+
+        driver_name:
+            driver.name,
+
+        customer_name:
+            customerName,
+
+        customer_location:
+    (
+        customerLat !== null &&
+        customerLng !== null
+    )
+        ? `${customerLat},${customerLng}`
+        : null,
+
+customer_lat:
+    customerLat,
+
+customer_lng:
+    customerLng
+
+    })
+    .eq("id", order.id)
+    .eq("user_id", user.id);
+
+
+
+
+
+
+            
+            
+
+        if (updateError) {
+
+            console.error(updateError);
+
+            alert(
+                "حدث خطأ أثناء تقديم الطلب:\n" +
+                updateError.message
+            );
+
+            return;
+        }
+
+
+        // =========================
+        // نجاح
+        // =========================
+
+        alert(
+            "تم تقديم الطلب بنجاح ✅\n\n" +
+            "رقم الطلب: " +
+            order.id +
+            "\n" +
+            "المندوب: " +
+            driver.name
+        );
+
+
+        // =========================
+        // إعادة التحميل
+        // =========================
+
+        location.reload();
+
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(
+            "حدث خطأ غير متوقع"
+        );
+
+    }
+
+}
+
+
+
+// =========================
+// الطلبات السابقة
+// =========================
+
+async function showPreviousOrders() {
+
+    const container =
+        document.getElementById("previousOrders");
+
+    container.innerHTML = `
+        <div class="empty">
+            جاري تحميل الطلبات السابقة...
+        </div>
+    `;
+
+
+    // التأكد من تسجيل الدخول
+
+    const {
+        data: { user },
+        error: userError
+    } = await supabaseClient.auth.getUser();
+
+
+    if (userError || !user) {
+
+        container.innerHTML = `
+            <div class="empty">
+
+                <div class="empty-icon">
+                    🔐
+                </div>
+
+                <h3>
+                    سجل دخولك أولاً
+                </h3>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // جلب كل الطلبات المقدمة لهذا المستخدم
+
+    const {
+        data: orders,
+        error: ordersError
+    } = await supabaseClient
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .neq("status", "جديد")
+        .order("id", {
+            ascending: false
+        });
+
+
+    if (ordersError) {
+
+        console.error(ordersError);
+
+        container.innerHTML = `
+            <div class="empty">
+                حدث خطأ أثناء تحميل الطلبات
+            </div>
+        `;
+
+        return;
+    }
+
+
+    if (!orders || orders.length === 0) {
+
+        container.innerHTML = `
+            <div class="empty">
+
+                <div class="empty-icon">
+                    📋
+                </div>
+
+                <h3>
+                    لا توجد طلبات سابقة
+                </h3>
+
+                <p>
+                    عندما تقدم طلبًا سيظهر هنا
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML = `
+        <h2 style="
+            margin-bottom:15px;
+            font-size:20px;
+            font-weight:800;
+        ">
+            📋 الطلبات السابقة
+        </h2>
+    `;
+
+
+    // عرض الطلبات
+
+    for (const order of orders) {
+
+        const orderCard =
+            document.createElement("div");
+
+        orderCard.style.cssText = `
+            background:white;
+            border-radius:22px;
+            padding:18px;
+            margin-bottom:15px;
+            box-shadow:0 8px 25px rgba(50,50,100,.05);
+        `;
+
+
+        const date =
+            new Date(order.created_at)
+                .toLocaleDateString("ar-SA");
+
+
+        orderCard.innerHTML = `
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:10px;
+                margin-bottom:10px;
+            ">
+
+                <div>
+
+                    <h3 style="
+                        font-size:17px;
+                        font-weight:800;
+                    ">
+                        الطلب #${order.id}
+                    </h3>
+
+                    <p style="
+                        font-size:11px;
+                        color:#858796;
+                        margin-top:3px;
+                    ">
+                        ${date}
+                    </p>
+
+                </div>
+
+
+                <div style="
+                    padding:7px 12px;
+                    border-radius:12px;
+                    background:#eeeaff;
+                    color:#6557ed;
+                    font-size:12px;
+                    font-weight:800;
+                ">
+                    ${order.status || "غير محدد"}
+                </div>
+                    <div style="
+                  margin-top:8px;
+             font-size:12px;
+             color:#555;
+             font-weight:700;
+            ">
+             🚚 المندوب:
+             ${order.driver_name || "غير محدد"}
+              ${
+             order.driver_number
+                ? " • رقم " + order.driver_number
+                : ""
+              }
+                /div>
+                  </div>
+
+
+            <div
+                id="order-items-${order.id}"
+            >
+                جاري تحميل المنتجات...
+            </div>
+
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                margin-top:15px;
+                padding-top:15px;
+                border-top:1px solid #eee;
+            ">
+
+                <strong>
+                    الإجمالي
+                </strong>
+
+                <strong style="
+                    color:#6557ed;
+                    font-size:17px;
+                ">
+                    ${order.total ?? 0} ر.س
+                </strong>
+
+            </div>
+        `;
+
+
+        container.appendChild(orderCard);
+
+
+        // جلب منتجات هذا الطلب
+
+        const {
+            data: items,
+            error: itemsError
+        } = await supabaseClient
+            .from("order_items")
+            .select("*")
+            .eq("order_id", order.id)
+            .order("id", {
+                ascending: true
+            });
+
+
+        const itemsContainer =
+            document.getElementById(
+                `order-items-${order.id}`
+            );
+
+
+        if (itemsError) {
+
+            itemsContainer.innerHTML = `
+                <p style="color:#e05265;">
+                    تعذر تحميل المنتجات
+                </p>
+            `;
+
+            continue;
+        }
+
+
+        if (!items || items.length === 0) {
+
+            itemsContainer.innerHTML = `
+                <p style="color:#858796;">
+                    لا توجد منتجات
+                </p>
+            `;
+
+            continue;
+        }
+
+
+        itemsContainer.innerHTML = "";
+
+
+        items.forEach(item => {
+
+            const itemDiv =
+                document.createElement("div");
+
+            itemDiv.style.cssText = `
+                display:flex;
+                align-items:center;
+                gap:10px;
+                padding:10px 0;
+                border-bottom:1px solid #f1f1f1;
+            `;
+
+
+            itemDiv.innerHTML = `
+
+                <div style="
+                    width:55px;
+                    height:55px;
+                    border-radius:14px;
+                    background:#eeeaff;
+                    overflow:hidden;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    flex-shrink:0;
+                ">
+
+                    ${
+                        item.image
+                        ?
+                        `<img
+                            src="${item.image}"
+                            style="
+                                width:100%;
+                                height:100%;
+                                object-fit:cover;
+                            "
+                        >`
+                        :
+                        "📱"
+                    }
+
+                </div>
+
+
+                <div style="flex:1;">
+
+                    <strong style="
+                        font-size:14px;
+                    ">
+                        ${item.model || "بدون موديل"}
+                    </strong>
+
+                    <p style="
+                        font-size:11px;
+                        color:#858796;
+                        margin-top:3px;
+                    ">
+                        ${item.company || ""}
+                        ${item.color ? " • " + item.color : ""}
+                    </p>
+
+                    <p style="
+                        font-size:11px;
+                        color:#858796;
+                    ">
+                        الكمية: ${item.quantity || 1}
+                    </p>
+
+                </div>
+
+
+                <strong style="
+                    color:#6557ed;
+                    font-size:13px;
+                ">
+                    ${
+                        (
+                            Number(item.price) || 0
+                        ) *
+                        (
+                            Number(item.quantity) || 1
+                        )
+                    }
+                    ر.س
+                </strong>
+
+            `;
+
+
+            itemsContainer.appendChild(itemDiv);
+
+        });
+
+    }
+
+}
+
+
+
+
+
+
+
+
+// =========================
+// إشعارات المستخدم
+// =========================
+// =========================
+// اختبار وتحميل الإشعارات
+// =========================
+
+async function loadNotifications() {
+
+    const container =
+        document.getElementById("notifications");
+
+    if (!container) {
+        console.log("لم يتم العثور على notifications");
+        return;
+    }
+
+
+    const {
+        data: { user },
+        error: userError
+    } = await supabaseClient.auth.getUser();
+
+
+    console.log("المستخدم الحالي:", user);
+
+
+    if (userError || !user) {
+
+        console.log("لا يوجد مستخدم مسجل دخول");
+
+        return;
+    }
+
+
+    const {
+        data: notifications,
+        error
+    } = await supabaseClient
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("id", {
+            ascending: false
+        });
+
+
+    console.log("الإشعارات:", notifications);
+    console.log("خطأ الإشعارات:", error);
+
+
+    if (error) {
+
+        container.innerHTML = `
+            <div style="
+                background:#fff0f3;
+                color:#e05265;
+                padding:15px;
+                border-radius:15px;
+                margin-bottom:15px;
+            ">
+                خطأ في تحميل الإشعارات:
+                ${error.message}
+            </div>
+        `;
+
+        return;
+    }
+
+
+    if (!notifications || notifications.length === 0) {
+
+        container.innerHTML = `
+            <div style="
+                background:white;
+                padding:15px;
+                border-radius:15px;
+                color:#858796;
+                margin-bottom:15px;
+            ">
+                لا توجد إشعارات
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML = `
+
+        <div style="
+            background:white;
+            border-radius:22px;
+            padding:18px;
+            box-shadow:0 8px 25px rgba(50,50,100,.05);
+        ">
+
+            <h2 style="
+                font-size:18px;
+                font-weight:800;
+                margin-bottom:12px;
+            ">
+                🔔 الإشعارات
+            </h2>
+
+
+            ${notifications.map(notification => `
+
+                <div style="
+                    padding:13px 0;
+                    border-bottom:1px solid #eee;
+                ">
+
+                    <strong style="
+                        display:block;
+                        font-size:14px;
+                    ">
+                        ${notification.title}
+                    </strong>
+
+                    <p style="
+                        margin-top:5px;
+                        font-size:12px;
+                        color:#666;
+                    ">
+                        ${notification.message}
+                    </p>
+
+                </div>
+
+            `).join("")}
+
+        </div>
+
+    `;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// =========================
+// موقع العميل
+// =========================
+
+let customerLat = null;
+let customerLng = null;
+let customerMap = null;
+let customerMarker = null;
+
+
+// =========================
+// فتح الخريطة
+// =========================
+
+function openLocationMap() {
+
+    const oldMap =
+        document.getElementById("locationMapModal");
+
+    if (oldMap) {
+        oldMap.remove();
+    }
+
+
+    const modal =
+        document.createElement("div");
+
+    modal.id = "locationMapModal";
+
+    modal.innerHTML = `
+
+        <div
+            style="
+                position:fixed;
+                inset:0;
+                background:rgba(0,0,0,.6);
+                z-index:999999;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                padding:15px;
+            "
+        >
+
+            <div
+                style="
+                    width:100%;
+                    max-width:600px;
+                    height:80vh;
+                    background:white;
+                    border-radius:22px;
+                    overflow:hidden;
+                    display:flex;
+                    flex-direction:column;
+                "
+            >
+
+                <div
+                    style="
+                        padding:15px;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        border-bottom:1px solid #eee;
+                    "
+                >
+
+                    <strong>
+                        📍 حدد موقع العميل
+                    </strong>
+
+                    <button
+                        onclick="closeLocationMap()"
+                        style="
+                            width:38px;
+                            height:38px;
+                            border:none;
+                            border-radius:50%;
+                            background:#f1f1f1;
+                            font-size:22px;
+                            cursor:pointer;
+                        "
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="customerMap"
+                    style="
+                        flex:1;
+                        min-height:300px;
+                    "
+                ></div>
+
+
+                <div
+                    style="
+                        padding:15px;
+                        border-top:1px solid #eee;
+                    "
+                >
+
+                    <button
+                        onclick="confirmCustomerLocation()"
+                        style="
+                            width:100%;
+                            height:52px;
+                            border:none;
+                            border-radius:14px;
+                            background:#6557ed;
+                            color:white;
+                            font-family:inherit;
+                            font-size:15px;
+                            font-weight:800;
+                            cursor:pointer;
+                        "
+                    >
+                        ✅ تأكيد الموقع
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+    document.body.appendChild(modal);
+
+    document.body.style.overflow = "hidden";
+
+
+    // إنشاء الخريطة
+
+    setTimeout(() => {
+
+        let startLat = 24.7136;
+        let startLng = 46.6753;
+
+
+        if (
+            customerLat !== null &&
+            customerLng !== null
+        ) {
+
+            startLat = customerLat;
+            startLng = customerLng;
+
+        }
+
+
+        customerMap =
+            L.map("customerMap")
+                .setView(
+                    [
+                        startLat,
+                        startLng
+                    ],
+                    13
+                );
+
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    "&copy; OpenStreetMap contributors"
+            }
+        ).addTo(customerMap);
+
+
+        // إذا كان عنده موقع سابق
+
+        if (
+            customerLat !== null &&
+            customerLng !== null
+        ) {
+
+            customerMarker =
+                L.marker([
+                    customerLat,
+                    customerLng
+                ])
+                .addTo(customerMap);
+
+        }
+
+
+        // الضغط على الخريطة
+
+        customerMap.on(
+            "click",
+            function(e) {
+
+                customerLat =
+                    e.latlng.lat;
+
+                customerLng =
+                    e.latlng.lng;
+
+
+                if (customerMarker) {
+
+                    customerMarker.setLatLng([
+                        customerLat,
+                        customerLng
+                    ]);
+
+                } else {
+
+                    customerMarker =
+                        L.marker([
+                            customerLat,
+                            customerLng
+                        ])
+                        .addTo(customerMap);
+
+                }
+
+            }
+        );
+
+
+    }, 100);
+
+}
+
+
+// =========================
+// تأكيد الموقع
+// =========================
+
+function confirmCustomerLocation() {
+
+    if (
+        customerLat === null ||
+        customerLng === null
+    ) {
+
+        alert(
+            "اضغط على الخريطة وحدد موقع العميل أولاً"
+        );
+
+        return;
+    }
+
+
+    document.getElementById(
+        "locationText"
+    ).innerHTML = `
+
+        <span style="color:#2e9d69;font-weight:800;">
+            ✅ تم تحديد موقع العميل
+        </span>
+
+        <br>
+
+        <span style="font-size:11px;">
+            ${customerLat.toFixed(6)},
+            ${customerLng.toFixed(6)}
+        </span>
+
+    `;
+
+
+    closeLocationMap();
+
+}
+
+
+// =========================
+// إغلاق الخريطة
+// =========================
+
+function closeLocationMap() {
+
+    const modal =
+        document.getElementById(
+            "locationMapModal"
+        );
+
+
+    if (modal) {
+        modal.remove();
+    }
+
+
+    document.body.style.overflow = "";
+
+
+    customerMap = null;
+    customerMarker = null;
+
+}
+
+async function clearCart() {
+
+    console.log("بدأ حذف السلة...");
+
+    try {
+
+        // التأكد من المستخدم
+        const {
+            data: { user },
+            error: userError
+        } = await supabaseClient.auth.getUser();
+
+        if (userError || !user) {
+            alert("يجب تسجيل الدخول أولاً");
+            return;
+        }
+
+        console.log("المستخدم:", user.id);
+
+
+        // جلب السلة الحالية
+        const {
+            data: orders,
+            error: orderError
+        } = await supabaseClient
+            .from("orders")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("status", "جديد")
+            .order("id", {
+                ascending: false
+            })
+            .limit(1);
+
+        if (orderError) {
+            console.error("خطأ جلب السلة:", orderError);
+            alert("حدث خطأ أثناء جلب السلة");
+            return;
+        }
+
+
+        if (!orders || orders.length === 0) {
+            alert("السلة فارغة");
+            return;
+        }
+
+
+        const orderId = orders[0].id;
+
+        console.log("رقم السلة:", orderId);
+
+
+        // حذف جميع منتجات السلة
+        const {
+            error: deleteError
+        } = await supabaseClient
+            .from("order_items")
+            .delete()
+            .eq("order_id", orderId);
+
+
+        if (deleteError) {
+
+            console.error(
+                "خطأ حذف المنتجات:",
+                deleteError
+            );
+
+            alert(
+                "لم يتم حذف المنتجات:\n" +
+                deleteError.message
+            );
+
+            return;
+        }
+
+
+        console.log("تم حذف المنتجات ✅");
+
+
+        // تصفير إجمالي السلة
+        const {
+            error: totalError
+        } = await supabaseClient
+            .from("orders")
+            .update({
+                total: 0
+            })
+            .eq("id", orderId)
+            .eq("user_id", user.id);
+
+
+        if (totalError) {
+
+            console.error(
+                "خطأ تحديث الإجمالي:",
+                totalError
+            );
+
+        }
+
+
+        // إعادة تحميل السلة
+        await loadOrders();
+
+
+        // إشعار
+        alert("تم حذف جميع منتجات السلة 🗑️✅");
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "خطأ غير متوقع:",
+            error
+        );
+
+        alert(
+            "حدث خطأ أثناء حذف السلة:\n" +
+            error.message
+        );
+
+    }
+
+}
+
+
+</script>
+    
+<script src="./no-zoom.js"></script>
+
+
+</body>
+
+</html>
