@@ -593,6 +593,611 @@ box-shadow:0 14px 36px rgba(10,31,82,.14)}
 }
 
 </style>
+
+```html
+<style>
+
+/* =========================================================
+   MOBILE DESIGN - INDEX.HTML
+   تصميم الجوال للصفحة الرئيسية فقط
+========================================================= */
+
+@media (max-width: 768px) {
+
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-size: 14px;
+    }
+
+
+    /* =====================================================
+       الحاوية الرئيسية
+    ===================================================== */
+
+    .container,
+    .main-container,
+    .home-container,
+    main {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+
+    /* =====================================================
+       الهيدر
+    ===================================================== */
+
+    header {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+
+    .header,
+    .navbar,
+    .top-header {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+
+    /* =====================================================
+       البحث
+    ===================================================== */
+
+    .search,
+    .search-box,
+    .search-container {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+
+    /* =====================================================
+       الأقسام
+       أهم جزء:
+       نخلي الأصناف أفقية ويمكن سحبها يمين ويسار
+       بدون نزول طويل
+    ===================================================== */
+
+    .categories,
+    .category-list,
+    .categories-list,
+    .home-categories {
+
+        display: flex !important;
+
+        flex-direction: row !important;
+
+        flex-wrap: nowrap !important;
+
+        overflow-x: auto !important;
+
+        overflow-y: hidden !important;
+
+        width: 100%;
+
+        max-width: 100%;
+
+        gap: 10px;
+
+        padding: 8px 12px 12px;
+
+        box-sizing: border-box;
+
+        scroll-behavior: smooth;
+
+        -webkit-overflow-scrolling: touch;
+
+        scrollbar-width: none;
+    }
+
+
+    .categories::-webkit-scrollbar,
+    .category-list::-webkit-scrollbar,
+    .categories-list::-webkit-scrollbar,
+    .home-categories::-webkit-scrollbar {
+        display: none;
+    }
+
+
+    /* =====================================================
+       عناصر الأصناف
+    ===================================================== */
+
+    .category,
+    .category-item,
+    .category-card {
+
+        flex: 0 0 auto !important;
+
+        width: 82px !important;
+
+        min-width: 82px !important;
+
+        max-width: 82px !important;
+
+        box-sizing: border-box;
+
+        text-align: center;
+    }
+
+
+    .category img,
+    .category-item img,
+    .category-card img {
+
+        width: 58px;
+
+        height: 58px;
+
+        object-fit: cover;
+
+        border-radius: 14px;
+    }
+
+
+    .category span,
+    .category-item span,
+    .category-card span {
+
+        display: block;
+
+        margin-top: 5px;
+
+        font-size: 12px;
+
+        line-height: 1.3;
+
+        white-space: nowrap;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+    }
+
+
+    /* =====================================================
+       عنوان الأقسام
+    ===================================================== */
+
+    .section-title,
+    .categories-title {
+
+        padding: 0 12px;
+
+        margin-bottom: 8px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+    }
+
+
+    /* =====================================================
+       المنتجات
+       
+       بدلاً من منتج واحد بعرض الشاشة:
+       نعرض منتجين جنب بعض
+    ===================================================== */
+
+    .products,
+    .products-grid,
+    .product-grid,
+    .home-products {
+
+        display: grid !important;
+
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+
+        gap: 10px !important;
+
+        padding: 0 10px;
+
+        width: 100%;
+
+        box-sizing: border-box;
+    }
+
+
+    .product-card,
+    .product-item {
+
+        width: 100% !important;
+
+        min-width: 0 !important;
+
+        box-sizing: border-box;
+
+        overflow: hidden;
+    }
+
+
+    .product-card img,
+    .product-item img {
+
+        width: 100%;
+
+        aspect-ratio: 1 / 1;
+
+        object-fit: cover;
+
+        display: block;
+    }
+
+
+    .product-card h3,
+    .product-item h3 {
+
+        font-size: 13px;
+
+        line-height: 1.4;
+
+        margin: 7px 8px 3px;
+    }
+
+
+    .product-card p,
+    .product-item p {
+
+        font-size: 12px;
+
+        margin: 3px 8px;
+    }
+
+
+    /* =====================================================
+       الأكثر مبيعاً
+       
+       نخليها أفقية:
+       المستخدم يسحب يمين ويسار
+       بدل قائمة طويلة تحت بعض
+    ===================================================== */
+
+    .best-selling,
+    .best-products,
+    .most-selling,
+    .best-sellers,
+    .featured-products {
+
+        display: flex !important;
+
+        flex-direction: row !important;
+
+        flex-wrap: nowrap !important;
+
+        overflow-x: auto !important;
+
+        overflow-y: hidden !important;
+
+        gap: 10px;
+
+        padding: 5px 12px 14px;
+
+        width: 100%;
+
+        box-sizing: border-box;
+
+        -webkit-overflow-scrolling: touch;
+
+        scrollbar-width: none;
+
+        scroll-snap-type: x mandatory;
+    }
+
+
+    .best-selling::-webkit-scrollbar,
+    .best-products::-webkit-scrollbar,
+    .most-selling::-webkit-scrollbar,
+    .best-sellers::-webkit-scrollbar,
+    .featured-products::-webkit-scrollbar {
+
+        display: none;
+    }
+
+
+    .best-selling .product-card,
+    .best-products .product-card,
+    .most-selling .product-card,
+    .best-sellers .product-card,
+    .featured-products .product-card {
+
+        flex: 0 0 145px !important;
+
+        width: 145px !important;
+
+        min-width: 145px !important;
+
+        scroll-snap-align: start;
+    }
+
+
+    /* =====================================================
+       البانر الرئيسي
+    ===================================================== */
+
+    .hero,
+    .hero-section,
+    .banner,
+    .home-banner {
+
+        width: calc(100% - 20px);
+
+        margin: 8px 10px;
+
+        box-sizing: border-box;
+
+        min-height: 150px;
+
+        border-radius: 18px;
+
+        overflow: hidden;
+    }
+
+
+    .hero-content,
+    .banner-content {
+
+        padding: 18px 16px;
+    }
+
+
+    .hero h1,
+    .banner h1 {
+
+        font-size: 21px;
+
+        line-height: 1.5;
+
+        margin: 0 0 6px;
+    }
+
+
+    .hero p,
+    .banner p {
+
+        font-size: 12px;
+
+        line-height: 1.6;
+
+        margin: 0;
+    }
+
+
+    /* =====================================================
+       لو عندك شريط عروض
+    ===================================================== */
+
+    .offers,
+    .offers-list,
+    .discounts {
+
+        display: flex !important;
+
+        flex-wrap: nowrap !important;
+
+        overflow-x: auto !important;
+
+        gap: 10px;
+
+        padding: 5px 12px 12px;
+
+        scrollbar-width: none;
+
+        -webkit-overflow-scrolling: touch;
+    }
+
+
+    .offers::-webkit-scrollbar,
+    .offers-list::-webkit-scrollbar,
+    .discounts::-webkit-scrollbar {
+
+        display: none;
+    }
+
+
+    .offer,
+    .offer-card,
+    .discount-card {
+
+        flex: 0 0 180px !important;
+
+        min-width: 180px !important;
+    }
+
+
+    /* =====================================================
+       الأزرار
+    ===================================================== */
+
+    button {
+
+        min-height: 40px;
+
+        touch-action: manipulation;
+    }
+
+
+    /* =====================================================
+       منع العناصر الكبيرة من توسيع الصفحة
+    ===================================================== */
+
+    img,
+    video,
+    iframe,
+    svg {
+
+        max-width: 100%;
+    }
+
+
+    /* =====================================================
+       إذا كانت الصفحة تستخدم section
+    ===================================================== */
+
+    section {
+
+        max-width: 100%;
+
+        box-sizing: border-box;
+    }
+
+
+    /* =====================================================
+       تقليل المسافات العمودية
+       عشان نشوف محتوى أكثر في الشاشة
+    ===================================================== */
+
+    section {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+
+    .section-header {
+        margin-bottom: 6px;
+    }
+
+
+    /* =====================================================
+       المنتجات الأكثر مبيعاً - شكل أصغر للجوال
+    ===================================================== */
+
+    .best-selling .product-card img,
+    .best-products .product-card img,
+    .most-selling .product-card img {
+
+        height: 125px;
+
+        aspect-ratio: auto;
+
+        object-fit: cover;
+    }
+
+
+    .best-selling .product-card h3,
+    .best-products .product-card h3,
+    .most-selling .product-card h3 {
+
+        font-size: 12px;
+
+        margin: 6px;
+    }
+
+
+    .best-selling .product-card .price,
+    .best-products .product-card .price,
+    .most-selling .product-card .price {
+
+        font-size: 13px;
+
+        margin: 0 6px 7px;
+    }
+
+
+    /* =====================================================
+       الشريط السفلي للجوال
+    ===================================================== */
+
+    .bottom-nav,
+    .mobile-bottom-nav,
+    .mobile-navigation {
+
+        position: fixed;
+
+        bottom: 0;
+
+        right: 0;
+
+        left: 0;
+
+        width: 100%;
+
+        height: 64px;
+
+        z-index: 9999;
+
+        box-sizing: border-box;
+    }
+
+
+    /* مساحة حتى لا يغطي الشريط المنتجات */
+
+    body {
+
+        padding-bottom: 70px;
+    }
+
+
+    /* =====================================================
+       شاشات الجوال الصغيرة جداً
+    ===================================================== */
+
+    @media (max-width: 390px) {
+
+        .products,
+        .products-grid,
+        .product-grid,
+        .home-products {
+
+            gap: 8px !important;
+
+            padding-left: 8px;
+
+            padding-right: 8px;
+        }
+
+
+        .best-selling .product-card,
+        .best-products .product-card,
+        .most-selling .product-card {
+
+            flex-basis: 135px !important;
+
+            width: 135px !important;
+
+            min-width: 135px !important;
+        }
+
+
+        .category,
+        .category-item,
+        .category-card {
+
+            width: 76px !important;
+
+            min-width: 76px !important;
+        }
+
+
+        .category img,
+        .category-item img,
+        .category-card img {
+
+            width: 52px;
+
+            height: 52px;
+        }
+
+    }
+
+}
+
+</style>
+
+
 </head>
 
 <body>
