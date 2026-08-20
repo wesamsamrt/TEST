@@ -427,40 +427,87 @@ backToDashboard.addEventListener("click", function () {
 
 
 /* تحميل المنتجات */
-
 async function loadAdminProducts() {
 
     adminProducts.innerHTML = `
         <div class="loading">
-            جاري تحميل المنتجات...
+            جاري تحميل جميع المنتجات...
         </div>
     `;
 
+    try {
 
-    const { data, error } =
-        await supabaseClient
-            .from("products")
-            .select("*")
-            .order("id", { ascending: false });
+        let allProducts = [];
+        let from = 0;
+        const pageSize = 1000;
 
+        while (true) {
 
-    if (error) {
+            const {
+                data,
+                error
+            } = await supabaseClient
+                .from("products")
+                .select("*")
+                .order("id", {
+                    ascending: false
+                })
+                .range(
+                    from,
+                    from + pageSize - 1
+                );
 
-        console.error(error);
+            if (error) {
+                throw error;
+            }
+
+            if (!data || data.length === 0) {
+                break;
+            }
+
+            allProducts.push(...data);
+
+            console.log(
+                "تم تحميل المنتجات:",
+                allProducts.length
+            );
+
+            // إذا رجعت أقل من 1000
+            // فهذا يعني أننا وصلنا للنهاية
+            if (data.length < pageSize) {
+                break;
+            }
+
+            from += pageSize;
+        }
+
+        adminProductsData = allProducts;
+
+        console.log(
+            "✅ إجمالي المنتجات:",
+            adminProductsData.length
+        );
+
+        renderAdminProducts(adminProductsData);
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "❌ خطأ تحميل جميع المنتجات:",
+            error
+        );
 
         adminProducts.innerHTML = `
             <div class="message error">
-                ${error.message}
+                حدث خطأ أثناء تحميل المنتجات
+                <br>
+                ${error.message || ""}
             </div>
         `;
 
-        return;
     }
-
-
-    adminProductsData = data || [];
-
-    renderAdminProducts(adminProductsData);
 
 }
 
@@ -566,13 +613,14 @@ adminProductSearch.addEventListener(
         const filtered =
             adminProductsData.filter(product => {
 
-                const text = `
+               const text = `
 
-                    ${product.model || ""}
-                    ${product.company || ""}
-                    ${product.category || ""}
-                    ${product.product_type || ""}
-                    ${product.type || ""}
+                 ${product.product_code || ""}
+                ${product.model || ""}
+                 ${product.company || ""}
+                     ${product.category || ""}
+                 ${product.product_type || ""}
+                 ${product.type || ""}
 
                 `.toLowerCase();
 
@@ -1076,8 +1124,7 @@ async function editProduct(id) {
         product.price ?? 0;
 
 
-    productFormCard.style.display =
-        "block";
+    productFormCard.style.display = "block";
 
 
     productFormCard.scrollIntoView({
@@ -1085,59 +1132,15 @@ async function editProduct(id) {
     });
 
 
+    productFormMessage.textContent =
+        "أنت الآن تعدل المنتج";
+
+    productFormMessage.style.color =
+        "var(--purple)";
+
+
     saveProductButton.textContent =
         "حفظ التعديل";
-
-
-    productFormMessage.textContent =
-        "";
-
-
-    const preview =
-        document.getElementById(
-            "productImagePreview"
-        );
-
-
-    if (product.image) {
-
-        preview.innerHTML = `
-
-            <div
-                style="
-                    margin-top:10px;
-                    display:flex;
-                    align-items:center;
-                    gap:10px;
-                "
-            >
-
-                <img
-                    src="${product.image}"
-                    style="
-                        width:80px;
-                        height:80px;
-                        object-fit:cover;
-                        border-radius:10px;
-                    "
-                >
-
-                <span>
-                    الصورة الحالية
-                </span>
-
-            </div>
-
-        `;
-
-    }
-
-    else {
-
-        preview.innerHTML =
-            "";
-
-    }
 
 }
 
@@ -1146,22 +1149,33 @@ async function editProduct(id) {
 
 async function deleteProduct(id) {
 
+    const product =
+        adminProductsData.find(
+            item => item.id === id
+        );
+
+
+    if (!product) {
+
+        alert("لم يتم العثور على المنتج");
+
+        return;
+    }
+
+
     const confirmed =
         confirm(
-            "هل أنت متأكد من حذف هذا المنتج؟"
+            `هل أنت متأكد من حذف المنتج؟\n\n${product.model || "هذا المنتج"}`
         );
 
 
     if (!confirmed) {
 
         return;
-
     }
 
 
-    const {
-        error
-    } =
+    const { error } =
         await supabaseClient
             .from("products")
             .delete()
@@ -1178,13 +1192,17 @@ async function deleteProduct(id) {
         );
 
         return;
-
     }
 
 
     await loadAdminProducts();
 
+    alert("تم حذف المنتج بنجاح ✅");
+
 }
+
+
+
 
 
 
@@ -1193,98 +1211,179 @@ async function deleteProduct(id) {
 ========================================================= */
 
 const categoriesButton =
-    document.getElementById(
-        "categoriesButton"
-    );
+    document.getElementById("categoriesButton");
 
 const categoriesAdmin =
-    document.getElementById(
-        "categoriesAdmin"
-    );
+    document.getElementById("categoriesAdmin");
 
 const backFromCategories =
-    document.getElementById(
-        "backFromCategories"
-    );
+    document.getElementById("backFromCategories");
 
 const addCategoryButton =
-    document.getElementById(
-        "addCategoryButton"
-    );
+    document.getElementById("addCategoryButton");
 
 const categoryFormCard =
-    document.getElementById(
-        "categoryFormCard"
-    );
+    document.getElementById("categoryFormCard");
 
 const cancelCategoryButton =
-    document.getElementById(
-        "cancelCategoryButton"
-    );
+    document.getElementById("cancelCategoryButton");
 
 const saveCategoryButton =
-    document.getElementById(
-        "saveCategoryButton"
-    );
-
-const categoryFormMessage =
-    document.getElementById(
-        "categoryFormMessage"
-    );
+    document.getElementById("saveCategoryButton");
 
 const categoriesList =
-    document.getElementById(
-        "categoriesList"
-    );
+    document.getElementById("categoriesList");
+
+const categoryFormMessage =
+    document.getElementById("categoryFormMessage");
 
 
+let adminCategories = [];
 let editingCategoryId = null;
 
 
-/* =========================================================
-   فتح إدارة التصنيفات
-========================================================= */
+/* فتح التصنيفات */
 
 categoriesButton.addEventListener(
     "click",
     async function () {
 
-        dashboardContent.style.display =
-            "none";
+        dashboardContent.style.display = "none";
 
-        productsAdmin.style.display =
-            "none";
+        productsAdmin.style.display = "none";
 
-        categoriesAdmin.style.display =
-            "block";
+        categoriesAdmin.style.display = "block";
 
-        await loadCategories();
+        await loadAdminCategories();
 
     }
 );
 
 
-/* =========================================================
-   الرجوع للوحة
-========================================================= */
+/* الرجوع */
 
 backFromCategories.addEventListener(
     "click",
     function () {
 
-        categoriesAdmin.style.display =
-            "none";
+        categoriesAdmin.style.display = "none";
 
-        dashboardContent.style.display =
-            "block";
+        dashboardContent.style.display = "block";
 
     }
 );
 
 
-/* =========================================================
-   زر إضافة تصنيف
-========================================================= */
+/* تحميل التصنيفات */
+
+async function loadAdminCategories() {
+
+    categoriesList.innerHTML = `
+        <div class="message">
+            جاري تحميل التصنيفات...
+        </div>
+    `;
+
+
+    const { data, error } =
+        await supabaseClient
+            .from("categories")
+            .select("*")
+            .order("id", { ascending: true });
+
+
+    if (error) {
+
+        console.error(error);
+
+        categoriesList.innerHTML = `
+            <div class="message error">
+                ${error.message}
+            </div>
+        `;
+
+        return;
+    }
+
+
+    adminCategories = data || [];
+
+    renderAdminCategories();
+
+}
+
+
+/* عرض التصنيفات */
+
+function renderAdminCategories() {
+
+    categoriesList.innerHTML = "";
+
+
+    if (!adminCategories.length) {
+
+        categoriesList.innerHTML = `
+            <div class="message">
+                لا توجد تصنيفات
+            </div>
+        `;
+
+        return;
+    }
+
+
+    adminCategories.forEach(category => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "category-admin-item";
+
+
+        item.innerHTML = `
+
+            <div class="category-admin-icon">
+                ${category.icon || "📦"}
+            </div>
+
+            <div class="category-admin-info">
+
+                <h3>
+                    ${category.name}
+                </h3>
+
+            </div>
+
+            <div class="category-admin-actions">
+
+                <button
+                    class="edit-category"
+                    onclick="editCategory(${category.id})"
+                >
+                    ✏️
+                </button>
+
+                <button
+                    class="delete-category"
+                    onclick="deleteCategory(${category.id})"
+                >
+                    🗑️
+                </button>
+
+            </div>
+
+        `;
+
+
+        categoriesList.appendChild(item);
+
+    });
+
+}
+
+
+/* إضافة تصنيف */
 
 addCategoryButton.addEventListener(
     "click",
@@ -1292,30 +1391,22 @@ addCategoryButton.addEventListener(
 
         editingCategoryId = null;
 
-        categoryFormCard.style.display =
-            "block";
-
-        categoryFormMessage.textContent =
-            "";
-
-        document.getElementById(
-            "categoryName"
-        ).value = "";
-
-        document.getElementById(
-            "categoryIcon"
-        ).value = "";
+        document.getElementById("categoryName").value = "";
+        document.getElementById("categoryIcon").value = "";
 
         saveCategoryButton.textContent =
             "حفظ التصنيف";
+
+        categoryFormMessage.textContent = "";
+
+        categoryFormCard.style.display =
+            "block";
 
     }
 );
 
 
-/* =========================================================
-   إلغاء التصنيف
-========================================================= */
+/* إلغاء */
 
 cancelCategoryButton.addEventListener(
     "click",
@@ -1330,155 +1421,7 @@ cancelCategoryButton.addEventListener(
 );
 
 
-/* =========================================================
-   تحميل التصنيفات
-========================================================= */
-
-async function loadCategories() {
-
-    categoriesList.innerHTML = `
-        <div class="loading">
-            جاري تحميل التصنيفات...
-        </div>
-    `;
-
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("categories")
-            .select("*")
-            .order("id", {
-                ascending: false
-            });
-
-
-    if (error) {
-
-        console.error(error);
-
-        categoriesList.innerHTML = `
-            <div class="message error">
-                ${error.message}
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    renderCategories(
-        data || []
-    );
-
-}
-
-
-/* =========================================================
-   عرض التصنيفات
-========================================================= */
-
-function renderCategories(
-    categories
-) {
-
-    categoriesList.innerHTML =
-        "";
-
-
-    if (!categories.length) {
-
-        categoriesList.innerHTML = `
-            <div class="message">
-                لا توجد تصنيفات
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    categories.forEach(
-        category => {
-
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "category-item";
-
-
-            item.innerHTML = `
-
-                <div
-                    class="category-info"
-                >
-
-                    <div
-                        class="category-icon"
-                    >
-                        ${
-                            category.icon ||
-                            "📦"
-                        }
-                    </div>
-
-                    <div>
-
-                        <h3>
-                            ${
-                                category.name ||
-                                ""
-                            }
-                        </h3>
-
-                    </div>
-
-                </div>
-
-
-                <div
-                    class="category-actions"
-                >
-
-                    <button
-                        class="edit-category"
-                        onclick="editCategory(${category.id})"
-                    >
-                        ✏️
-                    </button>
-
-                    <button
-                        class="delete-category"
-                        onclick="deleteCategory(${category.id})"
-                    >
-                        🗑️
-                    </button>
-
-                </div>
-
-            `;
-
-
-            categoriesList.appendChild(
-                item
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   حفظ التصنيف
-========================================================= */
+/* حفظ */
 
 saveCategoryButton.addEventListener(
     "click",
@@ -1489,19 +1432,14 @@ saveCategoryButton.addEventListener(
 async function saveCategory() {
 
     const name =
-        document.getElementById(
-            "categoryName"
-        )
-        .value
-        .trim();
-
+        document.getElementById("categoryName")
+            .value
+            .trim();
 
     const icon =
-        document.getElementById(
-            "categoryIcon"
-        )
-        .value
-        .trim();
+        document.getElementById("categoryIcon")
+            .value
+            .trim();
 
 
     if (!name) {
@@ -1513,18 +1451,13 @@ async function saveCategory() {
             "#e05265";
 
         return;
-
     }
 
 
-    saveCategoryButton.disabled =
-        true;
-
+    saveCategoryButton.disabled = true;
 
     saveCategoryButton.textContent =
-        editingCategoryId
-            ? "جاري التعديل..."
-            : "جاري الحفظ...";
+        "جاري الحفظ...";
 
 
     let result;
@@ -1536,16 +1469,10 @@ async function saveCategory() {
             await supabaseClient
                 .from("categories")
                 .update({
-
                     name: name,
-
-                    icon: icon
-
+                    icon: icon || "📦"
                 })
-                .eq(
-                    "id",
-                    editingCategoryId
-                );
+                .eq("id", editingCategoryId);
 
     }
 
@@ -1555,11 +1482,8 @@ async function saveCategory() {
             await supabaseClient
                 .from("categories")
                 .insert({
-
                     name: name,
-
-                    icon: icon
-
+                    icon: icon || "📦"
                 });
 
     }
@@ -1567,18 +1491,13 @@ async function saveCategory() {
 
     if (result.error) {
 
-        console.error(
-            result.error
-        );
-
         categoryFormMessage.textContent =
             result.error.message;
 
         categoryFormMessage.style.color =
             "#e05265";
 
-        saveCategoryButton.disabled =
-            false;
+        saveCategoryButton.disabled = false;
 
         saveCategoryButton.textContent =
             editingCategoryId
@@ -1586,130 +1505,96 @@ async function saveCategory() {
                 : "حفظ التصنيف";
 
         return;
-
     }
 
 
     categoryFormMessage.textContent =
         editingCategoryId
-            ? "تم تعديل التصنيف بنجاح ✅"
-            : "تمت إضافة التصنيف بنجاح ✅";
+            ? "تم تعديل التصنيف ✅"
+            : "تمت إضافة التصنيف ✅";
 
     categoryFormMessage.style.color =
         "#2e9d69";
 
 
-    editingCategoryId =
-        null;
-
-
-    document.getElementById(
-        "categoryName"
-    ).value = "";
-
-    document.getElementById(
-        "categoryIcon"
-    ).value = "";
-
+    editingCategoryId = null;
 
     categoryFormCard.style.display =
         "none";
 
 
-    saveCategoryButton.disabled =
-        false;
+    await loadAdminCategories();
+
+
+    saveCategoryButton.disabled = false;
 
     saveCategoryButton.textContent =
         "حفظ التصنيف";
 
-
-    await loadCategories();
-
 }
 
 
-/* =========================================================
-   تعديل التصنيف
-========================================================= */
+/* تعديل */
 
 async function editCategory(id) {
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("categories")
-            .select("*")
-            .eq("id", id)
-            .single();
-
-
-    if (error) {
-
-        console.error(error);
-
-        alert(
-            "لم يتم العثور على التصنيف"
+    const category =
+        adminCategories.find(
+            item => item.id === id
         );
 
-        return;
 
-    }
-
-
-    editingCategoryId =
-        id;
+    if (!category) return;
 
 
-    document.getElementById(
-        "categoryName"
-    ).value =
-        data.name || "";
+    editingCategoryId = id;
 
 
-    document.getElementById(
-        "categoryIcon"
-    ).value =
-        data.icon || "";
+    document.getElementById("categoryName").value =
+        category.name || "";
 
-
-    categoryFormCard.style.display =
-        "block";
+    document.getElementById("categoryIcon").value =
+        category.icon || "";
 
 
     saveCategoryButton.textContent =
         "حفظ التعديل";
 
 
-    categoryFormMessage.textContent =
-        "";
+    categoryFormCard.style.display =
+        "block";
+
+
+    categoryFormCard.scrollIntoView({
+        behavior: "smooth"
+    });
 
 }
 
 
-/* =========================================================
-   حذف التصنيف
-========================================================= */
+/* حذف */
 
 async function deleteCategory(id) {
 
-    const confirmed =
-        confirm(
-            "هل أنت متأكد من حذف هذا التصنيف؟"
+    const category =
+        adminCategories.find(
+            item => item.id === id
         );
 
 
-    if (!confirmed) {
-
-        return;
-
-    }
+    if (!category) return;
 
 
-    const {
-        error
-    } =
+    const confirmed =
+        confirm(
+            `هل أنت متأكد من حذف التصنيف؟\n\n${category.name}`
+        );
+
+
+    if (!confirmed) return;
+
+
+    const { error } =
         await supabaseClient
             .from("categories")
             .delete()
@@ -1718,21 +1603,24 @@ async function deleteCategory(id) {
 
     if (error) {
 
-        console.error(error);
-
         alert(
-            "حدث خطأ أثناء حذف التصنيف:\n" +
+            "حدث خطأ:\n" +
             error.message
         );
 
         return;
-
     }
 
 
-    await loadCategories();
+    await loadAdminCategories();
+
+    alert("تم حذف التصنيف بنجاح ✅");
 
 }
+
+
+
+
 
 
 /* =========================================================
@@ -1740,45 +1628,31 @@ async function deleteCategory(id) {
 ========================================================= */
 
 const ordersButton =
-    document.getElementById(
-        "ordersButton"
-    );
+    document.getElementById("ordersButton");
 
 const ordersAdmin =
-    document.getElementById(
-        "ordersAdmin"
-    );
+    document.getElementById("ordersAdmin");
 
 const backFromOrders =
-    document.getElementById(
-        "backFromOrders"
-    );
+    document.getElementById("backFromOrders");
 
 const adminOrders =
-    document.getElementById(
-        "adminOrders"
-    );
+    document.getElementById("adminOrders");
 
 
-/* =========================================================
-   فتح إدارة الطلبات
-========================================================= */
+/* فتح الطلبات */
 
 ordersButton.addEventListener(
     "click",
     async function () {
 
-        dashboardContent.style.display =
-            "none";
+        dashboardContent.style.display = "none";
 
-        productsAdmin.style.display =
-            "none";
+        productsAdmin.style.display = "none";
 
-        categoriesAdmin.style.display =
-            "none";
+        categoriesAdmin.style.display = "none";
 
-        ordersAdmin.style.display =
-            "block";
+        ordersAdmin.style.display = "block";
 
         await loadAdminOrders();
 
@@ -1786,448 +1660,1424 @@ ordersButton.addEventListener(
 );
 
 
-/* =========================================================
-   الرجوع
-========================================================= */
+/* الرجوع */
 
 backFromOrders.addEventListener(
     "click",
     function () {
 
-        ordersAdmin.style.display =
-            "none";
+        ordersAdmin.style.display = "none";
 
-        dashboardContent.style.display =
-            "block";
+        dashboardContent.style.display = "block";
 
     }
 );
 
 
-/* =========================================================
-   تحميل الطلبات
-========================================================= */
+/* تحميل الطلبات */
 
 async function loadAdminOrders() {
 
     adminOrders.innerHTML = `
-        <div class="loading">
+        <div class="message">
             جاري تحميل الطلبات...
         </div>
     `;
 
 
+    const {
+    data: orders,
+    error
+} = await supabaseClient
+    .from("orders")
+    .select(`
+    id,
+    status,
+    customer_name,
+    customer_phone,
+    customer_lat,
+    customer_lng,
+    customer_location,
+    total,
+    created_at,
+    user_id,
+    driver_name,
+    driver_number
+`)
+    .order("id", {
+        ascending: false
+    });
+
+console.log("ORDERS FROM ADMIN:", orders);
+
+if (orders) {
+    orders.forEach(order => {
+        console.log(
+            "طلب #" + order.id,
+            "driver_name =", order.driver_name,
+            "driver_number =", order.driver_number
+        );
+    });
+}
+
+
+    if (error) {
+
+        console.error(error);
+
+        adminOrders.innerHTML = `
+            <div class="message error">
+                حدث خطأ أثناء تحميل الطلبات:
+                ${error.message}
+            </div>
+        `;
+
+        return;
+    }
+
+
+    console.log(
+        "الطلبات التي وصلت للإدارة:",
+        orders
+    );
+
+
+    if (!orders || orders.length === 0) {
+
+        adminOrders.innerHTML = `
+            <div class="message">
+                لا توجد طلبات حتى الآن 📋
+            </div>
+        `;
+
+        return;
+    }
+
+
+    adminOrders.innerHTML = "";
+
+
+    for (const order of orders) {
+
+        await renderAdminOrder(order);
+
+    }
+
+}
+
+
+/* عرض طلب واحد */
+
+async function renderAdminOrder(order) {
+
+    const {
+        data: items,
+        error
+    } =
+        await supabaseClient
+            .from("order_items")
+            .select("*")
+            .eq("order_id", order.id)
+            .order("id", {
+                ascending: true
+            });
+
+
+    if (error) {
+
+        console.error(error);
+
+        return;
+
+    }
+
+
+    const card =
+        document.createElement("div");
+
+    card.className =
+        "admin-order-card";
+
+
+    const date =
+        new Date(order.created_at)
+            .toLocaleString("ar-SA", {
+                dateStyle: "medium",
+                timeStyle: "short"
+            });
+
+
+    let productsHTML = "";
+
+
+    (items || []).forEach(item => {
+
+        const itemTotal =
+            Number(item.price || 0) *
+            Number(item.quantity || 1);
+
+
+        productsHTML += `
+
+            <div class="admin-order-item">
+
+                <div class="admin-order-item-image">
+
+                    ${
+                        item.image
+                        ?
+                        `<img
+                            src="${item.image}"
+                            alt=""
+                        >`
+                        :
+                        "📦"
+                    }
+
+                </div>
+
+
+                <div class="admin-order-item-info">
+
+                    <h4>
+                        ${item.model || "بدون موديل"}
+                    </h4>
+
+                    <p>
+                        ${item.company || ""}
+                        ${
+                            item.color
+                            ? " • " + item.color
+                            : ""
+                        }
+                    </p>
+
+                    <span>
+                        الكمية: ${item.quantity || 1}
+                    </span>
+
+                </div>
+
+
+                <div class="admin-order-item-price">
+
+                    ${itemTotal.toFixed(2)} ر.س
+
+                </div>
+
+            </div>
+
+        `;
+
+    });
+
+
+    /* =========================
+       إحصائيات الأنواع
+    ========================= */
+
+    /* =========================
+   إحصائيات المنتجات حسب الكود
+========================= */
+
+const typeCodes = {};
+
+(items || []).forEach(item => {
+
+    const code =
+        item.product_code?.trim() || "بدون كود";
+
+    const quantity =
+        Number(item.quantity || 1);
+
+    typeCodes[code] =
+        (typeCodes[code] || 0) + quantity;
+
+});
+
+
+let typeStatsHTML = "";
+
+Object.entries(typeCodes).forEach(
+    ([code, quantity]) => {
+
+        typeStatsHTML += `
+            <span class="type-stat">
+                ${code}: ${quantity} قطعة
+            </span>
+        `;
+
+    }
+);
+
+
+    card.innerHTML = `
+
+        <div class="admin-order-top">
+
+            <div>
+
+                <span class="admin-order-number">
+                    الطلب #${order.id}
+                </span>
+
+                <h3>
+                    ${order.customer_name}
+                </h3>
+
+                <p>
+                         📱 ${order.customer_phone}
+                    </p>
+
+                    <p>
+    🚚 المندوب:
+    <strong>
+        ${order.driver_name || "غير محدد"}
+    </strong>
+
+    ${
+        order.driver_number
+        ? ` • رقم المندوب: ${order.driver_number}`
+        : ""
+    }
+</p>
+
+<p style="margin-top:8px;">
+    📍 الموقع:
+
+    ${
+        order.customer_lat && order.customer_lng
+        ?
+        `
+        <a
+            href="https://www.google.com/maps?q=${order.customer_lat},${order.customer_lng}"
+            target="_blank"
+            style="
+                display:inline-block;
+                margin-top:5px;
+                padding:7px 12px;
+                background:#eeeaff;
+                color:#6557ed;
+                border-radius:10px;
+                text-decoration:none;
+                font-weight:800;
+                font-size:12px;
+            "
+        >
+            🗺️ فتح موقع العميل
+        </a>
+        `
+        :
+        `
+        <span style="color:#999;">
+            لم يتم تحديد الموقع
+        </span>
+        `
+    }
+</p>
+
+                  </div>
+
+
+          <div class="admin-order-date">
+
+                ${date}
+
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+    <button
+        class="edit-order-button"
+        onclick="editOrder(${order.id})"
+    >
+        ✏️ تعديل الطلب
+    </button>
+
+    <button
+        class="print-order-button"
+        onclick="printOrder(${order.id})"
+    >
+        🖨️ طباعة الطلب
+    </button>
+
+</div>
+
+            </div>
+
+        </div>
+
+
+        <div class="admin-order-status">
+
+            <span>
+                الحالة:
+            </span>
+
+
+            <select
+                class="order-status-select"
+                onchange="updateOrderStatus(${order.id}, this.value)"
+            >
+
+                <option
+                    value="جديد"
+                    ${order.status === "جديد" ? "selected" : ""}
+                >
+                    جديد
+                </option>
+
+
+                <option
+                    value="قيد التجهيز"
+                    ${order.status === "قيد التجهيز" ? "selected" : ""}
+                >
+                    قيد التجهيز
+                </option>
+
+
+                <option
+                    value="تم شحن الطلب"
+                    ${order.status === "تم شحن الطلب" ? "selected" : ""}
+                >
+                    تم شحن الطلب
+                </option>
+
+
+                <option
+                    value="تم استلام طلبك"
+                    ${order.status === "تم استلام طلبك" ? "selected" : ""}
+                >
+                    تم استلام طلبك
+                </option>
+
+
+                <option
+                    value="ملغي"
+                    ${order.status === "ملغي" ? "selected" : ""}
+                >
+                    ملغي
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="admin-order-items">
+
+            ${productsHTML}
+
+        </div>
+
+
+        <div class="admin-order-bottom">
+
+            <strong>
+                الإجمالي
+            </strong>
+
+            <strong class="admin-order-total">
+                ${Number(order.total || 0).toFixed(2)} ر.س
+            </strong>
+
+        </div>
+
+    `;
+
+
+    adminOrders.appendChild(card);
+
+}
+
+
+/* =========================
+   تغيير حالة الطلب
+========================= */
+async function updateOrderStatus(orderId, newStatus) {
+
     try {
 
+        // =========================
+        // 1 - جلب الطلب
+        // =========================
+
         const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("orders")
-                .select(`
-                    *,
-                    order_items (
-                        id,
-                        order_id,
-                        product_id,
-                        product_code,
-                        category,
-                        product_type,
-                        type,
-                        company,
-                        model,
-                        color,
-                        quantity,
-                        price,
-                        image
-                    )
-                `)
-                .order(
-                    "id",
-                    {
-                        ascending: false
-                    }
-                );
+            data: order,
+            error: orderError
+        } = await supabaseClient
+            .from("orders")
+            .select("id, user_id, status")
+            .eq("id", orderId)
+            .single();
 
 
-        if (error) {
+        if (orderError || !order) {
 
-            console.error(
-                "Orders Error:",
-                error
-            );
+            console.error(orderError);
 
-            adminOrders.innerHTML = `
-                <div class="message error">
-                    ${
-                        error.message
-                    }
-                </div>
-            `;
+            alert("لم يتم العثور على الطلب");
+
+            return;
+        }
+
+
+        // =========================
+        // 2 - إذا نفس الحالة
+        // =========================
+
+        if (order.status === newStatus) {
 
             return;
 
         }
 
 
-        renderAdminOrders(
-            data || []
+        // =========================
+        // 3 - تحديث حالة الطلب
+        // =========================
+
+        const {
+            error: updateError
+        } = await supabaseClient
+            .from("orders")
+            .update({
+                status: newStatus
+            })
+            .eq("id", orderId);
+
+
+        if (updateError) {
+
+            console.error(updateError);
+
+            alert(
+                "حدث خطأ أثناء تحديث حالة الطلب:\n" +
+                updateError.message
+            );
+
+            return;
+        }
+
+
+        // =========================
+        // 4 - إنشاء إشعار للمستخدم
+        // =========================
+
+        if (order.user_id) {
+
+            const {
+                error: notificationError
+            } = await supabaseClient
+                .from("notifications")
+                .insert({
+
+                    user_id: order.user_id,
+
+                    order_id: order.id,
+
+                    title: "تحديث حالة الطلب 🔔",
+
+                    message:
+                        `تم تحديث حالة طلبك #${order.id} إلى "${newStatus}"`
+
+                });
+
+
+            if (notificationError) {
+
+                console.error(
+                    "خطأ في إنشاء الإشعار:",
+                    notificationError
+                );
+
+                alert(
+                    "تم تحديث حالة الطلب، لكن حدث خطأ في إرسال الإشعار."
+                );
+
+                return;
+            }
+
+        }
+
+
+        // =========================
+        // 5 - نجاح
+        // =========================
+
+        alert(
+            `تم تحديث الطلب #${order.id} إلى "${newStatus}" ✅`
         );
+
+
+        // =========================
+        // 6 - إعادة تحميل الطلبات في الإدارة
+        // =========================
+
+        await loadAdminOrders();
+
 
     }
 
     catch (error) {
 
         console.error(
-            "Load Orders Error:",
+            "Update Order Status Error:",
             error
         );
 
-        adminOrders.innerHTML = `
-            <div class="message error">
-                حدث خطأ أثناء تحميل الطلبات
-            </div>
-        `;
-
-    }
-
-}
-
-
-/* =========================================================
-   عرض الطلبات
-========================================================= */
-
-function renderAdminOrders(
-    orders
-) {
-
-    adminOrders.innerHTML =
-        "";
-
-
-    if (!orders.length) {
-
-        adminOrders.innerHTML = `
-            <div class="message">
-                لا توجد طلبات
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    orders.forEach(
-        order => {
-
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "admin-order";
-
-
-            const orderItems =
-                order.order_items ||
-                [];
-
-
-            let itemsHtml =
-                "";
-
-
-            orderItems.forEach(
-                product => {
-
-                    itemsHtml += `
-
-                        <div
-                            class="admin-order-item"
-                        >
-
-                            <div
-                                class="admin-order-item-image"
-                            >
-
-                                ${
-                                    product.image
-                                    ?
-                                    `
-                                        <img
-                                            src="${escapeHtmlAttribute(product.image)}"
-                                            alt=""
-                                        >
-                                    `
-                                    :
-                                    "📦"
-                                }
-
-                            </div>
-
-
-                            <div
-                                class="admin-order-item-info"
-                            >
-
-                                <strong>
-                                    ${
-                                        escapeHtmlAttribute(
-                                            product.model ||
-                                            "بدون موديل"
-                                        )
-                                    }
-                                </strong>
-
-                                <span>
-                                    ${
-                                        escapeHtmlAttribute(
-                                            product.company ||
-                                            ""
-                                        )
-                                    }
-                                </span>
-
-                                <span>
-                                    الكمية:
-                                    ${
-                                        product.quantity ??
-                                        0
-                                    }
-                                </span>
-
-                            </div>
-
-
-                            <div
-                                class="admin-order-item-price"
-                            >
-                                ${
-                                    Number(
-                                        product.price ||
-                                        0
-                                    ).toFixed(2)
-                                }
-                                ر.س
-                            </div>
-
-                        </div>
-
-                    `;
-
-                }
-            );
-
-
-            item.innerHTML = `
-
-                <div
-                    class="admin-order-header"
-                >
-
-                    <div>
-
-                        <h3>
-                            الطلب #
-                            ${
-                                order.id
-                            }
-                        </h3>
-
-                        <span>
-                            ${
-                                order.created_at
-                                ?
-                                new Date(
-                                    order.created_at
-                                ).toLocaleString(
-                                    "ar-SA"
-                                )
-                                :
-                                ""
-                            }
-                        </span>
-
-                    </div>
-
-
-                    <div
-                        class="admin-order-status"
-                    >
-                        ${
-                            escapeHtmlAttribute(
-                                order.status ||
-                                "جديد"
-                            )
-                        }
-                    </div>
-
-                </div>
-
-
-                <div
-                    class="admin-order-customer"
-                >
-
-                    <div>
-
-                        <strong>
-                            العميل
-                        </strong>
-
-                        <span>
-                            ${
-                                escapeHtmlAttribute(
-                                    order.customer_name ||
-                                    ""
-                                )
-                            }
-                        </span>
-
-                    </div>
-
-
-                    <div>
-
-                        <strong>
-                            الجوال
-                        </strong>
-
-                        <span>
-                            ${
-                                escapeHtmlAttribute(
-                                    order.customer_phone ||
-                                    ""
-                                )
-                            }
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div
-                    class="admin-order-items"
-                >
-
-                    ${
-                        itemsHtml ||
-                        `
-                            <div class="message">
-                                لا توجد منتجات
-                            </div>
-                        `
-                    }
-
-                </div>
-
-
-                <div
-                    class="admin-order-footer"
-                >
-
-                    <div>
-
-                        <strong>
-                            الإجمالي
-                        </strong>
-
-                        <span>
-                            ${
-                                Number(
-                                    order.total ||
-                                    0
-                                ).toFixed(2)
-                            }
-                            ر.س
-                        </span>
-
-                    </div>
-
-
-                    <div
-                        class="admin-order-actions"
-                    >
-
-                        <button
-                            type="button"
-                            class="edit-order-button"
-                            onclick="openEditOrder(${order.id})"
-                        >
-                            ✏️ تعديل
-                        </button>
-
-                        <button
-                            type="button"
-                            class="delete-order-button"
-                            onclick="deleteOrder(${order.id})"
-                        >
-                            🗑️ حذف
-                        </button>
-
-                    </div>
-
-                </div>
-
-            `;
-
-
-            adminOrders.appendChild(
-                item
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   حذف الطلب
-========================================================= */
-
-async function deleteOrder(id) {
-
-    const confirmed =
-        confirm(
-            "هل أنت متأكد من حذف هذا الطلب؟"
+        alert(
+            "حدث خطأ غير متوقع أثناء تحديث الطلب"
         );
 
-
-    if (!confirmed) {
-
-        return;
-
     }
 
+}
+
+
+/* =========================================================
+   طباعة الطلب
+========================================================= */
+
+async function printOrder(orderId) {
 
     try {
 
         const {
+            data: order,
+            error: orderError
+        } =
+            await supabaseClient
+                .from("orders")
+                .select("*")
+                .eq("id", orderId)
+                .single();
+
+
+        if (orderError || !order) {
+
+            console.error(orderError);
+
+            alert(
+                "لم يتم العثور على الطلب"
+            );
+
+            return;
+        }
+
+
+        const {
+            data: items,
             error: itemsError
         } =
             await supabaseClient
                 .from("order_items")
-                .delete()
-                .eq(
-                    "order_id",
-                    id
-                );
+                .select("*")
+                .eq("order_id", orderId)
+                .order("id", {
+                    ascending: true
+                });
 
 
         if (itemsError) {
 
-            console.error(
-                itemsError
-            );
+            console.error(itemsError);
 
             alert(
-                "حدث خطأ أثناء حذف منتجات الطلب:\n" +
+                "حدث خطأ أثناء تحميل منتجات الطلب"
+            );
+
+            return;
+        }
+
+
+        const date =
+            new Date(order.created_at)
+                .toLocaleString(
+                    "ar-SA",
+                    {
+                        dateStyle: "medium",
+                        timeStyle: "short"
+                    }
+                );
+
+
+        let rowsHTML = "";
+
+
+        const typeCodes = {};
+
+(items || []).forEach(item => {
+
+    const code =
+        item.product_code?.trim() ||
+        "بدون كود";
+
+    const quantity =
+        Number(item.quantity || 1);
+
+    typeCodes[code] =
+        (typeCodes[code] || 0) + quantity;
+
+});
+
+
+let typeStatsHTML = "";
+
+Object.entries(typeCodes).forEach(
+    ([code, quantity]) => {
+
+        typeStatsHTML += `
+            <span class="type-stat">
+                ${code}: ${quantity} قطعة
+            </span>
+        `;
+
+    }
+);
+
+
+        (items || []).forEach(
+            (item, index) => {
+
+                const quantity =
+                    Number(item.quantity || 1);
+
+
+                const price =
+                    Number(item.price || 0);
+
+
+                const total =
+                    quantity * price;
+
+
+                rowsHTML += `
+
+                    <tr>
+
+                        <td>
+                            ${index + 1}
+                        </td>
+
+                        <td>
+                             ${item.product_code || "-"}
+                        </td>
+
+                        <td>
+                            ${item.category || "-"}
+                        </td>
+
+                        <td>
+                            ${item.product_type || "-"}
+                        </td>
+
+                        <td>
+                            ${item.type || "-"}
+                        </td>
+
+                        <td>
+                            ${item.company || "-"}
+                        </td>
+
+                        <td>
+                            ${item.model || "-"}
+                        </td>
+
+                        <td>
+                            ${item.color || "-"}
+                        </td>
+
+                        <td>
+                            ${quantity}
+                        </td>
+
+                        <td>
+                            ${price.toFixed(2)} ر.س
+                        </td>
+
+                        <td>
+                            ${total.toFixed(2)} ر.س
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        const printWindow =
+            window.open(
+                "",
+                "_blank",
+                "width=1200,height=800"
+            );
+
+
+        if (!printWindow) {
+
+            alert(
+                "المتصفح منع نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى."
+            );
+
+            return;
+        }
+
+
+        printWindow.document.write(`
+
+<!DOCTYPE html>
+
+<html
+    lang="ar"
+    dir="rtl"
+>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>
+        طلب #${order.id}
+    </title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            font-family:
+                Arial,
+                Tahoma,
+                sans-serif;
+
+            margin: 0;
+
+            padding: 30px;
+
+            background: white;
+
+            color: #111;
+
+        }
+
+
+        .print-page {
+
+            width: 100%;
+
+            max-width: 1200px;
+
+            margin: auto;
+
+        }
+
+
+        .header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+
+            border-bottom: 2px solid #111;
+
+            padding-bottom: 18px;
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .header h1 {
+
+            margin: 0 0 8px;
+
+            font-size: 25px;
+
+        }
+
+
+        .header p {
+
+            margin: 4px 0;
+
+            font-size: 13px;
+
+        }
+
+
+        .order-number {
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+        }
+
+
+        .customer-info {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    border: 1px solid #111;
+
+    margin-bottom: 20px;
+}
+
+        .customer-box {
+
+            padding: 12px;
+
+            border-left: 1px solid #111;
+
+        }
+
+
+        .customer-box:last-child {
+
+            border-left: none;
+
+        }
+
+
+        .customer-label {
+
+            display: block;
+
+            font-size: 11px;
+
+            color: #555;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        .customer-value {
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+        }
+
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            table-layout: fixed;
+
+            font-size: 11px;
+
+        }
+
+
+        th,
+        td {
+
+            border: 1px solid #111;
+
+            padding: 9px 5px;
+
+            text-align: center;
+
+            vertical-align: middle;
+
+            word-break: break-word;
+
+        }
+
+
+        th {
+
+            background: #eeeeee;
+
+            font-weight: bold;
+
+        }
+
+
+        tbody tr:nth-child(even) {
+
+            background: #fafafa;
+
+        }
+
+
+        .total-section {
+
+            margin-top: 20px;
+
+            display: flex;
+
+            justify-content: flex-end;
+
+        }
+
+
+        .total-box {
+
+            border: 2px solid #111;
+
+            min-width: 280px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            padding: 14px 18px;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+        }
+
+
+        .type-stats {
+
+            margin-top: 12px;
+
+            display: flex;
+
+            gap: 8px;
+
+            flex-wrap: wrap;
+
+            justify-content: flex-end;
+
+        }
+
+
+        .type-stat {
+
+            border: 1px solid #111;
+
+            padding: 5px 9px;
+
+            font-size: 11px;
+
+        }
+
+
+        .footer {
+
+            margin-top: 30px;
+
+            padding-top: 12px;
+
+            border-top: 1px solid #aaa;
+
+            text-align: center;
+
+            font-size: 11px;
+
+            color: #555;
+
+        }
+
+
+        @media print {
+
+            body {
+
+                padding: 10px;
+
+            }
+
+
+            .print-page {
+
+                max-width: none;
+
+            }
+
+
+            @page {
+
+                size: A4 landscape;
+
+                margin: 10mm;
+
+            }
+
+
+            th {
+
+                background: #eeeeee !important;
+
+                -webkit-print-color-adjust: exact;
+
+                print-color-adjust: exact;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="print-page">
+
+
+    <div class="header">
+
+        <div>
+
+            <h1>
+               تحضير
+            </h1>
+
+            <p>
+                رقم الطلب:
+                <strong>
+                    #${order.id}
+                </strong>
+            </p>
+
+        </div>
+
+
+        <div>
+
+            <div class="order-number">
+                طلب #${order.id}
+            </div>
+
+            <p>
+                ${date}
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="customer-info">
+
+
+        <div class="customer-box">
+
+            <span class="customer-label">
+                اسم العميل
+            </span>
+
+            <span class="customer-value">
+                ${order.customer_name || "-"}
+            </span>
+
+        </div>
+
+
+        <div class="customer-box">
+
+            <span class="customer-label">
+                رقم الجوال
+            </span>
+
+            <span class="customer-value">
+                ${order.customer_phone || "-"}
+            </span>
+
+        </div>
+
+
+        <div class="customer-box">
+
+            <span class="customer-label">
+                حالة الطلب
+            </span>
+
+            <span class="customer-value">
+                ${order.status || "جديد"}
+            </span>
+
+                  </div>
+                <div class="customer-box">
+
+              <span class="customer-label">
+                 المندوب
+                 </span>
+
+             <span class="customer-value">
+             ${order.driver_name || "-"}
+              ${
+                 order.driver_number
+            ? ` (${order.driver_number})`
+              : ""
+              }
+             </span>
+
+                </div>
+
+        <div class="customer-box">
+
+            <span class="customer-label">
+                رقم الطلب
+            </span>
+
+            <span class="customer-value">
+                #${order.id}
+            </span>
+
+        </div>
+
+
+    </div>
+
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>#</th>
+                <th>
+                     رقم المنتج
+                </th>
+
+                <th>
+                    التصنيف
+                </th>
+
+                <th>
+                    نوع المنتج
+                </th>
+
+                <th>
+                    النوع
+                </th>
+
+                <th>
+                    الشركة
+                </th>
+
+                <th>
+                    الموديل
+                </th>
+
+                <th>
+                    اللون
+                </th>
+
+                <th>
+                    الكمية
+                </th>
+
+                <th>
+                    السعر
+                </th>
+
+                <th>
+                    الإجمالي
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            ${rowsHTML}
+
+        </tbody>
+
+    </table>
+
+
+    <div class="total-section">
+
+        <div>
+
+            <div class="total-box">
+
+                <span>
+                    إجمالي الطلب
+                </span>
+
+                <span>
+                    ${Number(order.total || 0).toFixed(2)} ر.س
+                </span>
+
+            </div>
+
+
+            <div class="type-stats">
+
+                <strong>
+                    إحصائيات الأنواع:
+                </strong>
+
+                ${typeStatsHTML}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer">
+
+        تم إنشاء هذا الكشف من لوحة إدارة المتجر
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+    window.onload = function () {
+
+        window.print();
+
+    };
+
+<\/script>
+
+
+</body>
+
+</html>
+
+        `);
+
+
+        printWindow.document.close();
+
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(
+            "حدث خطأ أثناء تجهيز الطلب للطباعة"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   تعديل الطلب
+========================================================= */
+
+let editingOrderId = null;
+let editingOrderItems = [];
+
+
+/* عناصر نافذة التعديل */
+
+const editOrderModal =
+    document.getElementById("editOrderModal");
+
+const closeEditOrderButton =
+    document.getElementById("closeEditOrderButton");
+
+const cancelOrderEditButton =
+    document.getElementById("cancelOrderEditButton");
+
+const saveOrderEditButton =
+    document.getElementById("saveOrderEditButton");
+
+const addOrderItemButton =
+    document.getElementById("addOrderItemButton");
+
+const editOrderItems =
+    document.getElementById("editOrderItems");
+
+const editOrderTotal =
+    document.getElementById("editOrderTotal");
+
+const editOrderMessage =
+    document.getElementById("editOrderMessage");
+
+
+/* =========================================================
+   فتح تعديل الطلب
+========================================================= */
+
+async function editOrder(orderId) {
+
+    try {
+
+        editOrderMessage.textContent = "";
+
+        editingOrderId = orderId;
+
+
+        /* =========================
+           جلب الطلب
+        ========================= */
+
+        const {
+            data: order,
+            error: orderError
+        } = await supabaseClient
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .single();
+
+
+        if (orderError || !order) {
+
+            console.error(orderError);
+
+            alert("لم يتم العثور على الطلب");
+
+            return;
+
+        }
+
+
+        /* =========================
+           جلب منتجات الطلب
+        ========================= */
+
+        const {
+            data: items,
+            error: itemsError
+        } = await supabaseClient
+            .from("order_items")
+            .select("*")
+            .eq("order_id", orderId)
+            .order("id", {
+                ascending: true
+            });
+
+
+        if (itemsError) {
+
+            console.error(itemsError);
+
+            alert(
+                "حدث خطأ أثناء تحميل منتجات الطلب:\n" +
                 itemsError.message
             );
 
@@ -2236,244 +3086,76 @@ async function deleteOrder(id) {
         }
 
 
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("orders")
-                .delete()
-                .eq(
-                    "id",
-                    id
-                );
+        /* =========================
+           بيانات العميل
+        ========================= */
+
+        document.getElementById(
+            "editOrderNumber"
+        ).textContent =
+            `الطلب #${order.id}`;
 
 
-        if (error) {
-
-            console.error(
-                error
-            );
-
-            alert(
-                "حدث خطأ أثناء حذف الطلب:\n" +
-                error.message
-            );
-
-            return;
-
-        }
+        document.getElementById(
+            "editOrderCustomerName"
+        ).value =
+            order.customer_name || "";
 
 
-        await loadAdminOrders();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Delete Order Error:",
-            error
-        );
-
-        alert(
-            "حدث خطأ أثناء حذف الطلب"
-        );
-
-    }
-
-}
+        document.getElementById(
+            "editOrderCustomerPhone"
+        ).value =
+            order.customer_phone || "";
 
 
-/* =========================================================
-   نافذة تعديل الطلب
-========================================================= */
-
-const editOrderModal =
-    document.getElementById(
-        "editOrderModal"
-    );
-
-const editOrderNumber =
-    document.getElementById(
-        "editOrderNumber"
-    );
-
-const closeEditOrderButton =
-    document.getElementById(
-        "closeEditOrderButton"
-    );
-
-const cancelOrderEditButton =
-    document.getElementById(
-        "cancelOrderEditButton"
-    );
-
-const saveOrderEditButton =
-    document.getElementById(
-        "saveOrderEditButton"
-    );
-
-const editOrderMessage =
-    document.getElementById(
-        "editOrderMessage"
-    );
-
-const editOrderCustomerName =
-    document.getElementById(
-        "editOrderCustomerName"
-    );
-
-const editOrderCustomerPhone =
-    document.getElementById(
-        "editOrderCustomerPhone"
-    );
-
-const editOrderDriverName =
-    document.getElementById(
-        "editOrderDriverName"
-    );
-
-const editOrderDriverNumber =
-    document.getElementById(
-        "editOrderDriverNumber"
-    );
-
-const editOrderItems =
-    document.getElementById(
-        "editOrderItems"
-    );
-
-const editOrderTotal =
-    document.getElementById(
-        "editOrderTotal"
-    );
-
-const addOrderItemButton =
-    document.getElementById(
-        "addOrderItemButton"
-    );
+        document.getElementById(
+            "editOrderDriverName"
+        ).value =
+            order.driver_name || "";
 
 
-let editingOrderId =
-    null;
-
-let editingOrderItems =
-    [];
-
-
-/* =========================================================
-   فتح تعديل الطلب
-========================================================= */
-
-async function openEditOrder(id) {
-
-    editingOrderId =
-        id;
+        document.getElementById(
+            "editOrderDriverNumber"
+        ).value =
+            order.driver_number || "";
 
 
-    editOrderMessage.textContent =
-        "";
-
-
-    editOrderModal.style.display =
-        "flex";
-
-
-    document.body.style.overflow =
-        "hidden";
-
-
-    editOrderNumber.textContent =
-        "الطلب #" + id;
-
-
-    editOrderItems.innerHTML = `
-        <div class="loading">
-            جاري تحميل بيانات الطلب...
-        </div>
-    `;
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("orders")
-                .select(`
-                    *,
-                    order_items (
-                        *
-                    )
-                `)
-                .eq(
-                    "id",
-                    id
-                )
-                .single();
-
-
-        if (error) {
-
-            console.error(
-                error
-            );
-
-            editOrderMessage.textContent =
-                error.message;
-
-            editOrderMessage.style.color =
-                "#e05265";
-
-            return;
-
-        }
-
-
-        editOrderCustomerName.value =
-            data.customer_name ||
-            "";
-
-        editOrderCustomerPhone.value =
-            data.customer_phone ||
-            "";
-
-        editOrderDriverName.value =
-            data.driver_name ||
-            "";
-
-        editOrderDriverNumber.value =
-            data.driver_number ||
-            "";
-
+        /* =========================
+           نسخ المنتجات
+        ========================= */
 
         editingOrderItems =
-            (data.order_items || [])
-                .map(
-                    item => ({
-                        ...item
-                    })
-                );
+            (items || []).map(item => ({
+                ...item
+            }));
 
 
         renderEditOrderItems();
 
+
+        /* =========================
+           فتح النافذة
+        ========================= */
+
+        editOrderModal.style.display =
+            "flex";
+
+
+        document.body.style.overflow =
+            "hidden";
+
     }
 
     catch (error) {
 
         console.error(
-            "Open Edit Order Error:",
+            "Edit Order Error:",
             error
         );
 
-        editOrderMessage.textContent =
-            "حدث خطأ أثناء تحميل الطلب";
-
-        editOrderMessage.style.color =
-            "#e05265";
+        alert(
+            "حدث خطأ أثناء فتح تعديل الطلب"
+        );
 
     }
 
@@ -2481,24 +3163,27 @@ async function openEditOrder(id) {
 
 
 /* =========================================================
-   عرض منتجات الطلب في نافذة التعديل
+   عرض منتجات الطلب داخل النافذة
 ========================================================= */
 
 function renderEditOrderItems() {
 
-    editOrderItems.innerHTML =
-        "";
+    editOrderItems.innerHTML = "";
 
 
     if (!editingOrderItems.length) {
 
         editOrderItems.innerHTML = `
+
             <div class="message">
+
                 لا توجد منتجات في الطلب
+
             </div>
+
         `;
 
-        updateEditOrderTotal();
+        calculateEditOrderTotal();
 
         return;
 
@@ -2509,9 +3194,7 @@ function renderEditOrderItems() {
         (item, index) => {
 
             const row =
-                document.createElement(
-                    "div"
-                );
+                document.createElement("div");
 
             row.className =
                 "edit-order-item";
@@ -2519,242 +3202,202 @@ function renderEditOrderItems() {
 
             row.innerHTML = `
 
-                <div
-                    class="edit-order-item-image"
-                >
+                <div class="edit-order-item-grid">
 
-                    ${
-                        item.image
-                        ?
-                        `
-                            <img
-                                src="${escapeHtmlAttribute(item.image)}"
-                                alt=""
-                            >
-                        `
-                        :
-                        "📦"
-                    }
+                    <div class="edit-order-item-field">
 
-                </div>
+                        <label>
+                            الموديل
+                        </label>
+
+                        <input
+                            type="text"
+                            value="${escapeHtmlAttribute(item.model || "")}"
+                            onchange="changeEditOrderItem(${index}, 'model', this.value)"
+                        >
+
+                    </div>
 
 
-                <div
-                    class="edit-order-item-info"
-                >
+                    <div class="edit-order-item-field">
 
-                    <strong>
-                        ${
-                            escapeHtmlAttribute(
-                                item.model ||
-                                "بدون موديل"
-                            )
-                        }
-                    </strong>
+                        <label>
+                            اللون
+                        </label>
 
-                    <span>
-                        ${
-                            escapeHtmlAttribute(
-                                item.company ||
-                                ""
-                            )
-                        }
-                    </span>
+                        <input
+                            type="text"
+                            value="${escapeHtmlAttribute(item.color || "")}"
+                            onchange="changeEditOrderItem(${index}, 'color', this.value)"
+                        >
 
-                </div>
+                    </div>
 
 
-                <div
-                    class="edit-order-item-fields"
-                >
+                    <div class="edit-order-item-field">
 
-                    <label>
-                        الكمية
+                        <label>
+                            الكمية
+                        </label>
 
                         <input
                             type="number"
                             min="1"
-                            value="${
-                                item.quantity ??
-                                1
-                            }"
-                            data-index="${index}"
-                            class="edit-item-quantity"
+                            value="${Number(item.quantity || 1)}"
+                            onchange="changeEditOrderItem(${index}, 'quantity', this.value)"
                         >
 
-                    </label>
+                    </div>
 
 
-                    <label>
-                        السعر
+                    <div class="edit-order-item-field">
+
+                        <label>
+                            السعر
+                        </label>
 
                         <input
                             type="number"
                             min="0"
                             step="0.01"
-                            value="${
-                                item.price ??
-                                0
-                            }"
-                            data-index="${index}"
-                            class="edit-item-price"
+                            value="${Number(item.price || 0)}"
+                            onchange="changeEditOrderItem(${index}, 'price', this.value)"
                         >
 
-                    </label>
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="remove-order-item"
+                        onclick="removeEditOrderItem(${index})"
+                    >
+                        🗑️
+                    </button>
 
                 </div>
-
-
-                <button
-                    type="button"
-                    class="remove-edit-item"
-                    data-index="${index}"
-                >
-                    🗑️
-                </button>
 
             `;
 
 
-            editOrderItems.appendChild(
-                row
-            );
+            editOrderItems.appendChild(row);
 
         }
     );
 
 
-    editOrderItems
-        .querySelectorAll(
-            ".edit-item-quantity"
-        )
-        .forEach(
-            input => {
-
-                input.addEventListener(
-                    "input",
-                    function () {
-
-                        const index =
-                            Number(
-                                this.dataset.index
-                            );
-
-                        editingOrderItems[
-                            index
-                        ].quantity =
-                            Number(
-                                this.value
-                            ) || 1;
-
-                        updateEditOrderTotal();
-
-                    }
-                );
-
-            }
-        );
-
-
-    editOrderItems
-        .querySelectorAll(
-            ".edit-item-price"
-        )
-        .forEach(
-            input => {
-
-                input.addEventListener(
-                    "input",
-                    function () {
-
-                        const index =
-                            Number(
-                                this.dataset.index
-                            );
-
-                        editingOrderItems[
-                            index
-                        ].price =
-                            Number(
-                                this.value
-                            ) || 0;
-
-                        updateEditOrderTotal();
-
-                    }
-                );
-
-            }
-        );
-
-
-    editOrderItems
-        .querySelectorAll(
-            ".remove-edit-item"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        const index =
-                            Number(
-                                this.dataset.index
-                            );
-
-                        editingOrderItems.splice(
-                            index,
-                            1
-                        );
-
-                        renderEditOrderItems();
-
-                    }
-                );
-
-            }
-        );
-
-
-    updateEditOrderTotal();
+    calculateEditOrderTotal();
 
 }
 
 
 /* =========================================================
-   حساب إجمالي الطلب
+   تغيير بيانات منتج
 ========================================================= */
 
-function updateEditOrderTotal() {
+function changeEditOrderItem(
+    index,
+    field,
+    value
+) {
+
+    if (!editingOrderItems[index]) {
+
+        return;
+
+    }
+
+
+    if (
+        field === "quantity"
+    ) {
+
+        value =
+            Math.max(
+                1,
+                Number(value) || 1
+            );
+
+    }
+
+
+    if (
+        field === "price"
+    ) {
+
+        value =
+            Math.max(
+                0,
+                Number(value) || 0
+            );
+
+    }
+
+
+    editingOrderItems[index][field] =
+        value;
+
+
+    calculateEditOrderTotal();
+
+}
+
+
+/* =========================================================
+   حذف منتج من الطلب
+========================================================= */
+
+function removeEditOrderItem(index) {
+
+    if (!editingOrderItems[index]) {
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "هل تريد حذف هذا المنتج من الطلب؟"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    editingOrderItems.splice(
+        index,
+        1
+    );
+
+
+    renderEditOrderItems();
+
+}
+
+
+/* =========================================================
+   حساب الإجمالي
+========================================================= */
+
+function calculateEditOrderTotal() {
 
     const total =
         editingOrderItems.reduce(
-            (
-                sum,
-                item
-            ) => {
-
-                const quantity =
-                    Number(
-                        item.quantity ||
-                        0
-                    );
+            (sum, item) => {
 
                 const price =
-                    Number(
-                        item.price ||
-                        0
-                    );
+                    Number(item.price || 0);
 
-                return (
-                    sum +
-                    (
-                        quantity *
-                        price
-                    )
-                );
+                const quantity =
+                    Number(item.quantity || 1);
+
+                return sum +
+                    (price * quantity);
 
             },
             0
@@ -2764,7 +3407,16 @@ function updateEditOrderTotal() {
     editOrderTotal.textContent =
         total.toFixed(2);
 
+
+    return total;
+
 }
+
+
+/* =========================================================
+   إضافة منتج جديد للطلب
+========================================================= */
+
 
 
 /* =========================================================
@@ -2786,86 +3438,86 @@ async function saveOrderEdit() {
     }
 
 
-    saveOrderEditButton.disabled =
-        true;
-
-    saveOrderEditButton.textContent =
-        "جاري الحفظ...";
-
-
-    editOrderMessage.textContent =
-        "";
-
-
     try {
+
+        saveOrderEditButton.disabled =
+            true;
+
+        saveOrderEditButton.textContent =
+            "جاري الحفظ...";
+
+
+        editOrderMessage.textContent = "";
+
+
+        /* =========================
+           بيانات العميل
+        ========================= */
+
+        const customerName =
+            document.getElementById(
+                "editOrderCustomerName"
+            ).value.trim();
+
+
+        const customerPhone =
+            document.getElementById(
+                "editOrderCustomerPhone"
+            ).value.trim();
+
+
+        const driverName =
+            document.getElementById(
+                "editOrderDriverName"
+            ).value.trim();
+
+
+        const driverNumber =
+            document.getElementById(
+                "editOrderDriverNumber"
+            ).value.trim();
+
 
         /* =========================
            حساب الإجمالي
         ========================= */
 
         const total =
-            editingOrderItems.reduce(
-                (
-                    sum,
-                    item
-                ) => {
-
-                    return (
-                        sum +
-                        (
-                            Number(
-                                item.quantity ||
-                                0
-                            ) *
-                            Number(
-                                item.price ||
-                                0
-                            )
-                        )
-                    );
-
-                },
-                0
-            );
+            calculateEditOrderTotal();
 
 
         /* =========================
-           تحديث بيانات الطلب
+           تحديث الطلب
         ========================= */
 
         const {
-            error:
-                orderError
-        } =
-            await supabaseClient
-                .from("orders")
-                .update({
+            error: orderUpdateError
+        } = await supabaseClient
+            .from("orders")
+            .update({
 
-                    customer_name:
-                        editOrderCustomerName.value.trim(),
+                customer_name:
+                    customerName,
 
-                    customer_phone:
-                        editOrderCustomerPhone.value.trim(),
+                customer_phone:
+                    customerPhone,
 
-                    driver_name:
-                        editOrderDriverName.value.trim(),
+                driver_name:
+                    driverName,
 
-                    driver_number:
-                        editOrderDriverNumber.value.trim(),
+                driver_number:
+                    driverNumber,
 
-                    total:
-                        total
+                total:
+                    total
 
-                })
-                .eq(
-                    "id",
-                    editingOrderId
-                );
+            })
+            .eq("id", editingOrderId);
 
 
-        if (orderError) {
+        if (orderUpdateError) {
 
-            throw orderError;
+            throw orderUpdateError;
 
         }
 
@@ -2874,114 +3526,67 @@ async function saveOrderEdit() {
            تحديث المنتجات
         ========================= */
 
-        for (
-            const item
-            of editingOrderItems
-        ) {
-
-            if (item.id) {
-
-                const {
-                    error
-                } =
-                    await supabaseClient
-                        .from("order_items")
-                        .update({
-
-                            quantity:
-                                Number(
-                                    item.quantity ||
-                                    1
-                                ),
-
-                            price:
-                                Number(
-                                    item.price ||
-                                    0
-                                )
-
-                        })
-                        .eq(
-                            "id",
-                            item.id
-                        );
+        const originalItems =
+            editingOrderItems.filter(
+                item => item.id
+            );
 
 
-                if (error) {
-
-                    throw error;
-
-                }
-
-            }
-
-            else {
-
-                const {
-                    error
-                } =
-                    await supabaseClient
-                        .from("order_items")
-                        .insert({
-
-                            order_id:
-                                editingOrderId,
-
-                            product_id:
-                                item.product_id,
-
-                            product_code:
-                                item.product_code ||
-                                null,
-
-                            category:
-                                item.category ||
-                                null,
-
-                            product_type:
-                                item.product_type ||
-                                null,
-
-                            type:
-                                item.type ||
-                                null,
-
-                            company:
-                                item.company ||
-                                null,
-
-                            model:
-                                item.model ||
-                                null,
-
-                            color:
-                                item.color ||
-                                null,
-
-                            quantity:
-                                Number(
-                                    item.quantity ||
-                                    1
-                                ),
-
-                            price:
-                                Number(
-                                    item.price ||
-                                    0
-                                ),
-
-                            image:
-                                item.image ||
-                                null
-
-                        });
+        const currentIds =
+            originalItems.map(
+                item => item.id
+            );
 
 
-                if (error) {
+        /* =========================
+           حذف المنتجات التي حذفها الأدمن
+        ========================= */
 
-                    throw error;
+        const {
+            data: oldItems,
+            error: oldItemsError
+        } = await supabaseClient
+            .from("order_items")
+            .select("id")
+            .eq("order_id", editingOrderId);
 
-                }
+
+        if (oldItemsError) {
+
+            throw oldItemsError;
+
+        }
+
+
+        const idsToDelete =
+            (oldItems || [])
+                .filter(
+                    oldItem =>
+                        !currentIds.includes(
+                            oldItem.id
+                        )
+                )
+                .map(
+                    item => item.id
+                );
+
+
+        if (idsToDelete.length) {
+
+            const {
+                error: deleteError
+            } = await supabaseClient
+                .from("order_items")
+                .delete()
+                .in(
+                    "id",
+                    idsToDelete
+                );
+
+
+            if (deleteError) {
+
+                throw deleteError;
 
             }
 
@@ -2989,27 +3594,180 @@ async function saveOrderEdit() {
 
 
         /* =========================
-           رسالة نجاح
+           تحديث المنتجات الموجودة
+        ========================= */
+
+        for (
+            const item
+            of originalItems
+        ) {
+
+            const {
+                error: itemUpdateError
+            } = await supabaseClient
+                .from("order_items")
+                .update({
+
+                    product_code:
+                        item.product_code || null,
+
+                    category:
+                        item.category || null,
+
+                    product_type:
+                        item.product_type || null,
+
+                    type:
+                        item.type || null,
+
+                    company:
+                        item.company || null,
+
+                    model:
+                        item.model || null,
+
+                    color:
+                        item.color || null,
+
+                    quantity:
+                        Math.max(
+                            1,
+                            Number(
+                                item.quantity
+                            ) || 1
+                        ),
+
+                    price:
+                        Math.max(
+                            0,
+                            Number(
+                                item.price
+                            ) || 0
+                        ),
+
+                    image:
+                        item.image || null
+
+                })
+                .eq(
+                    "id",
+                    item.id
+                );
+
+
+            if (itemUpdateError) {
+
+                throw itemUpdateError;
+
+            }
+
+        }
+
+
+        /* =========================
+           إضافة المنتجات الجديدة
+        ========================= */
+
+        const newItems =
+            editingOrderItems.filter(
+                item => !item.id
+            );
+
+
+        if (newItems.length) {
+
+            const insertData =
+                newItems.map(item => ({
+
+                    order_id:
+                        editingOrderId,
+
+                    product_id:
+                       item.product_id,    
+
+                    product_code:
+                        item.product_code || null,
+
+                    category:
+                        item.category || null,
+
+                    product_type:
+                        item.product_type || null,
+
+                    type:
+                        item.type || null,
+
+                    company:
+                        item.company || null,
+
+                    model:
+                        item.model || null,
+
+                    color:
+                        item.color || null,
+
+                    quantity:
+                        Math.max(
+                            1,
+                            Number(
+                                item.quantity
+                            ) || 1
+                        ),
+
+                    price:
+                        Math.max(
+                            0,
+                            Number(
+                                item.price
+                            ) || 0
+                        ),
+
+                    image:
+                        item.image || null
+
+                }));
+
+
+            const {
+                error: insertError
+            } = await supabaseClient
+                .from("order_items")
+                .insert(
+                    insertData
+                );
+
+
+            if (insertError) {
+
+                throw insertError;
+
+            }
+
+        }
+
+
+        /* =========================
+           نجاح
         ========================= */
 
         editOrderMessage.textContent =
-            "تم حفظ تعديلات الطلب بنجاح ✅";
+            "تم حفظ تعديل الطلب بنجاح ✅";
 
         editOrderMessage.style.color =
             "#2e9d69";
 
 
-        await loadAdminOrders();
-
-
         setTimeout(
-            function () {
+            async function () {
 
                 closeEditOrder();
+
+                await loadAdminOrders();
 
             },
             700
         );
+
 
     }
 
@@ -3020,7 +3778,9 @@ async function saveOrderEdit() {
             error
         );
 
+
         editOrderMessage.textContent =
+            "حدث خطأ أثناء حفظ التعديلات:\n" +
             error.message;
 
         editOrderMessage.style.color =
@@ -3114,132 +3874,88 @@ function escapeHtmlAttribute(value) {
 /* =========================================================
    اختيار منتج لإضافته إلى الطلب
 ========================================================= */
+addOrderItemButton.addEventListener("click", async function () {
 
-addOrderItemButton.addEventListener(
-    "click",
-    async function () {
+    addOrderItemButton.disabled = true;
+    addOrderItemButton.textContent = "جاري تحميل المنتجات...";
 
-        addOrderItemButton.disabled =
-            true;
+    try {
 
-        addOrderItemButton.textContent =
-            "جاري تحميل المنتجات...";
+        const { data, error } = await supabaseClient
+            .from("products")
+            .select("*")
+            .order("id", { ascending: false })
+            .limit(1000);
 
-        try {
+        if (error) {
 
-            const {
-                data,
-                error
-            } =
-                await supabaseClient
-                    .from("products")
-                    .select("*")
-                    .order(
-                        "id",
-                        {
-                            ascending: false
-                        }
-                    )
-                    .limit(1000);
-
-
-            if (error) {
-
-                console.error(
-                    "PRODUCT LOAD ERROR:",
-                    error
-                );
-
-                alert(
-                    "خطأ في تحميل المنتجات:\n\n" +
-                    error.message
-                );
-
-                return;
-
-            }
-
-
-            console.log(
-                "منتجات الإضافة:",
-                data
-            );
-
-
-            if (
-                !data ||
-                data.length === 0
-            ) {
-
-                alert(
-                    "لم يتم العثور على منتجات"
-                );
-
-                return;
-
-            }
-
-
-            showOrderProductList(
-                data
-            );
-
-        }
-
-        catch (error) {
-
-            console.error(
-                "ADD PRODUCT ERROR:",
-                error
-            );
+            console.error("PRODUCT LOAD ERROR:", error);
 
             alert(
-                "حدث خطأ:\n\n" +
+                "خطأ في تحميل المنتجات:\n\n" +
                 error.message
             );
 
+            return;
         }
 
-        finally {
-
-            addOrderItemButton.disabled =
-                false;
-
-            addOrderItemButton.textContent =
-                "+ إضافة منتج";
-
-        }
-
-    }
-);
-
-
-function showOrderProductList(
-    products
-) {
-
-    const oldPicker =
-        document.getElementById(
-            "orderProductPicker"
+        console.log(
+            "منتجات الإضافة:",
+            data
         );
 
+        if (!data || data.length === 0) {
+
+            alert("لم يتم العثور على منتجات");
+
+            return;
+        }
+
+        showOrderProductList(data);
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "ADD PRODUCT ERROR:",
+            error
+        );
+
+        alert(
+            "حدث خطأ:\n\n" +
+            error.message
+        );
+
+    }
+
+    finally {
+
+        addOrderItemButton.disabled = false;
+
+        addOrderItemButton.textContent =
+            "+ إضافة منتج";
+
+    }
+
+});
+
+
+function showOrderProductList(products) {
+
+    const oldPicker =
+        document.getElementById("orderProductPicker");
 
     if (oldPicker) {
-
         oldPicker.remove();
-
     }
 
 
     const picker =
-        document.createElement(
-            "div"
-        );
-
+        document.createElement("div");
 
     picker.id =
         "orderProductPicker";
-
 
     picker.style.cssText = `
         position: fixed;
@@ -3322,35 +4038,26 @@ function showOrderProductList(
     `;
 
 
-    document.body.appendChild(
-        picker
-    );
+    document.body.appendChild(picker);
 
 
-    renderOrderProductList(
-        products
-    );
+    renderOrderProductList(products);
 
 
     document
-        .getElementById(
-            "orderProductSearch"
-        )
-        .addEventListener(
-            "input",
-            function () {
+        .getElementById("orderProductSearch")
+        .addEventListener("input", function () {
 
-                const search =
-                    this.value
-                        .trim()
-                        .toLowerCase();
+            const search =
+                this.value
+                    .trim()
+                    .toLowerCase();
 
 
-                const filtered =
-                    products.filter(
-                        product => {
+            const filtered =
+                products.filter(product => {
 
-                            const text = `
+                    const text = `
                         ${product.model || ""}
                         ${product.company || ""}
                         ${product.product_code || ""}
@@ -3360,55 +4067,37 @@ function showOrderProductList(
                     `.toLowerCase();
 
 
-                            return text.includes(
-                                search
-                            );
+                    return text.includes(search);
 
-                        }
-                    );
+                });
 
 
-                renderOrderProductList(
-                    filtered
-                );
+            renderOrderProductList(filtered);
 
-            }
-        );
+        });
 
 }
 
-
-function renderOrderProductList(
-    products
-) {
+function renderOrderProductList(products) {
 
     const list =
         document.getElementById(
             "orderProductList"
         );
 
-
     if (!list) return;
 
-
-    list.innerHTML =
-        "";
+    list.innerHTML = "";
 
 
-    products.forEach(
-        product => {
+    products.forEach(product => {
 
-            const button =
-                document.createElement(
-                    "button"
-                );
+        const button =
+            document.createElement("button");
 
+        button.type = "button";
 
-            button.type =
-                "button";
-
-
-            button.style.cssText = `
+        button.style.cssText = `
             width:100%;
             display:flex;
             align-items:center;
@@ -3424,7 +4113,7 @@ function renderOrderProductList(
         `;
 
 
-            button.innerHTML = `
+        button.innerHTML = `
 
             <div style="
                 width:55px;
@@ -3506,36 +4195,29 @@ function renderOrderProductList(
         `;
 
 
-            button.addEventListener(
-                "click",
-                function () {
+        button.addEventListener(
+            "click",
+            function () {
 
-                    addProductToCurrentOrder(
-                        product
-                    );
+                addProductToCurrentOrder(
+                    product
+                );
 
-                }
-            );
+            }
+        );
 
 
-            list.appendChild(
-                button
-            );
+        list.appendChild(button);
 
-        }
-    );
+    });
 
 }
 
 
-function addProductToCurrentOrder(
-    product
-) {
 
-    if (
-        !product ||
-        !product.id
-    ) {
+function addProductToCurrentOrder(product) {
+
+    if (!product || !product.id) {
 
         alert(
             "المنتج لا يحتوي على رقم product_id"
@@ -3557,45 +4239,33 @@ function addProductToCurrentOrder(
             product.id,
 
         product_code:
-            product.product_code ||
-            null,
+            product.product_code || null,
 
         category:
-            product.category ||
-            null,
+            product.category || null,
 
         product_type:
-            product.product_type ||
-            null,
+            product.product_type || null,
 
         type:
-            product.type ||
-            null,
+            product.type || null,
 
         company:
-            product.company ||
-            null,
+            product.company || null,
 
         model:
-            product.model ||
-            null,
+            product.model || null,
 
         color:
-            product.color ||
-            null,
+            product.color || null,
 
-        quantity:
-            1,
+        quantity: 1,
 
         price:
-            Number(
-                product.price ||
-                0
-            ),
+            Number(product.price || 0),
 
         image:
-            product.image ||
-            null
+            product.image || null
 
     });
 
@@ -3605,8 +4275,6 @@ function addProductToCurrentOrder(
     renderEditOrderItems();
 
 }
-
-
 function closeOrderProductPicker() {
 
     const picker =
@@ -3614,25 +4282,8 @@ function closeOrderProductPicker() {
             "orderProductPicker"
         );
 
-
     if (picker) {
-
         picker.remove();
-
-    }
-
-}function closeOrderProductPicker() {
-
-    const picker =
-        document.getElementById(
-            "orderProductPicker"
-        );
-
-
-    if (picker) {
-
-        picker.remove();
-
     }
 
 }
