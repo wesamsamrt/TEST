@@ -1977,7 +1977,6 @@ addButton.onclick = async function () {
     )
 );
 
-
         alert(
             `تمت إضافة ${selectedItems.length} منتج للسلة بنجاح`
         );
