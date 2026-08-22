@@ -440,6 +440,7 @@
 
 let cartOrder = null;
 let cartItems = [];
+const quantitySaveTimers = new Map();
 
 function escapeCartHtml(value) {
     return String(value || "").replace(/[&<>'"]/g, char => ({
@@ -922,59 +923,42 @@ loadNotifications();
 // =========================
 
 async function changeQuantity(itemId, change) {
+    const item = cartItems.find(cartItem => Number(cartItem.id) === Number(itemId));
+    if (!item) return;
 
-    const {
-        data: item,
-        error
-    } = await supabaseClient
-        .from("order_items")
-        .select("*")
-        .eq("id", itemId)
-        .single();
-
-
-    if (error || !item) {
-
-        alert("حدث خطأ أثناء تعديل الكمية");
-
-        return;
-    }
-
-
-    const newQuantity =
-        (item.quantity || 1) + change;
-
-
+    const newQuantity = Number(item.quantity || 1) + change;
     if (newQuantity <= 0) {
-
+        clearTimeout(quantitySaveTimers.get(itemId));
+        quantitySaveTimers.delete(itemId);
         await removeOrderItem(itemId);
-
         return;
     }
 
+    // نُظهر التعديل فورًا؛ لا ننتظر الشبكة ولا نعيد تحميل السلة مع كل نقرة.
+    item.quantity = newQuantity;
+    cartOrder.total = cartItems.reduce((sum, cartItem) =>
+        sum + Number(cartItem.price || 0) * Number(cartItem.quantity || 0), 0
+    );
+    renderCartView();
 
-    const { error: updateError } =
-        await supabaseClient
-            .from("order_items")
-            .update({
-                quantity: newQuantity
-            })
-            .eq("id", itemId);
+    clearTimeout(quantitySaveTimers.get(itemId));
+    quantitySaveTimers.set(itemId, setTimeout(async () => {
+        quantitySaveTimers.delete(itemId);
+        const latestItem = cartItems.find(cartItem => Number(cartItem.id) === Number(itemId));
+        if (!latestItem || !cartOrder) return;
 
+        // نحفظ آخر كمية فقط بعد 600ms من آخر ضغطة.
+        const [{ error: itemError }, { error: orderError }] = await Promise.all([
+            supabaseClient.from("order_items").update({ quantity: latestItem.quantity }).eq("id", itemId),
+            supabaseClient.from("orders").update({ total: cartOrder.total }).eq("id", cartOrder.id)
+        ]);
 
-    if (updateError) {
-
-        console.error(updateError);
-
-        alert("حدث خطأ أثناء تعديل الكمية");
-
-        return;
-    }
-
-
-    await updateOrderTotal();
-
-    loadOrders();
+        if (itemError || orderError) {
+            console.error(itemError || orderError);
+            alert("تعذر حفظ تعديل الكمية. سيتم إعادة تحميل السلة.");
+            await loadOrders();
+        }
+    }, 600));
 }
 
 

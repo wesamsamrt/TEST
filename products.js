@@ -922,6 +922,13 @@ function openProductModal(variants) {
     const addButton =
         document.getElementById("confirmAddProduct");
 
+    function updateModelCheckmarks() {
+        Array.from(modelSelect.options).forEach(option => {
+            if (option.disabled || !option.value) return;
+            option.textContent = `${option.selected ? "✓ " : ""}${option.value}`;
+        });
+    }
+
     // يجعل النقر على أي موديل يضيفه/يزيله مباشرة، دون الحاجة إلى زر Ctrl.
     modelSelect.addEventListener("mousedown", function (event) {
         const option = event.target.closest("option");
@@ -1326,6 +1333,8 @@ if (compatibilityType === "general") {
 
         modelSelect.disabled = models.length === 0;
 
+        updateModelCheckmarks();
+
         if (models.length) {
             const hint = document.createElement("option");
             hint.disabled = true;
@@ -1341,6 +1350,8 @@ if (compatibilityType === "general") {
     ===================================================== */
 
     modelSelect.addEventListener("change", function () {
+
+        updateModelCheckmarks();
 
         const company =
             companySelect.value.trim();
