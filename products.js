@@ -1968,7 +1968,14 @@ addButton.onclick = async function () {
            إضافة جميع المنتجات
         ============================================= */
 
-  await addProductsBatch(selectedItems);
+ await Promise.all(
+    selectedItems.map(item =>
+        addProduct(
+            item.product,
+            item.quantity
+        )
+    )
+);
 
 
         alert(
@@ -2492,19 +2499,20 @@ loadProducts();
 
 setupFilters();
 
-
 /* =========================================================
-   إضافة المنتج للسلة
+   إضافة عدة منتجات للسلة دفعة واحدة - سريع
 ========================================================= */
-async function addProduct(product, quantity = 1) {
 
-    quantity = parseInt(quantity);
+async function addProductsBatch(items) {
 
-    if (isNaN(quantity) || quantity < 1) {
-        quantity = 1;
+    if (!items || !items.length) {
+        return;
     }
 
-    // التأكد من تسجيل الدخول
+    /* ==========================================
+       المستخدم - مرة واحدة فقط
+    ========================================== */
+
     const {
         data: { user },
         error: userError
@@ -2514,11 +2522,11 @@ async function addProduct(product, quantity = 1) {
         throw new Error("LOGIN_REQUIRED");
     }
 
-    if (!product || !product.id) {
-        throw new Error("PRODUCT_NOT_FOUND");
-    }
 
-    // البحث عن الطلب المفتوح
+    /* ==========================================
+       جلب الطلب المفتوح - مرة واحدة فقط
+    ========================================== */
+
     const {
         data: orders,
         error: ordersError
@@ -2536,9 +2544,14 @@ async function addProduct(product, quantity = 1) {
         throw ordersError;
     }
 
+
     let order;
 
-    // إنشاء طلب جديد إذا ما فيه طلب
+
+    /* ==========================================
+       إنشاء الطلب إذا غير موجود
+    ========================================== */
+
     if (!orders || orders.length === 0) {
 
         const {
@@ -2579,59 +2592,103 @@ async function addProduct(product, quantity = 1) {
 
     }
 
-    // البحث عن المنتج داخل السلة
+
+    /* ==========================================
+       IDs المنتجات
+    ========================================== */
+
+    const productIds =
+        items.map(item =>
+            item.product.id
+        );
+
+
+    /* ==========================================
+       جلب المنتجات الموجودة بالسلة
+       استعلام واحد فقط
+    ========================================== */
+
     const {
-        data: existingItem,
-        error: itemError
+        data: existingItems,
+        error: existingItemsError
     } = await supabaseClient
         .from("order_items")
         .select("*")
         .eq("order_id", order.id)
-        .eq("product_id", product.id)
-        .maybeSingle();
+        .in("product_id", productIds);
 
-    if (itemError) {
-        throw itemError;
+    if (existingItemsError) {
+        throw existingItemsError;
     }
 
-    // إذا المنتج موجود نزيد الكمية
-    if (existingItem) {
 
-        const newQuantity =
-            (Number(existingItem.quantity) || 0) +
-            quantity;
+    /* ==========================================
+       تحويل الموجود إلى Map
+    ========================================== */
 
-        const {
-            error: updateError
-        } = await supabaseClient
-            .from("order_items")
-            .update({
+    const existingMap = new Map();
 
-                quantity: newQuantity,
+    (existingItems || []).forEach(item => {
+
+        existingMap.set(
+            String(item.product_id),
+            item
+        );
+
+    });
+
+
+    const inserts = [];
+    const updates = [];
+
+
+    /* ==========================================
+       تجهيز كل العمليات بدون انتظار
+    ========================================== */
+
+    items.forEach(item => {
+
+        const product =
+            item.product;
+
+        const quantity =
+            Math.max(
+                1,
+                parseInt(item.quantity) || 1
+            );
+
+
+        const existing =
+            existingMap.get(
+                String(product.id)
+            );
+
+
+        /* المنتج موجود */
+
+        if (existing) {
+
+            updates.push({
+
+                id: existing.id,
+
+                quantity:
+                    (Number(existing.quantity) || 0)
+                    + quantity,
 
                 product_code:
                     product.product_code
 
-            })
-            .eq(
-                "id",
-                existingItem.id
-            );
+            });
 
-        if (updateError) {
-            throw updateError;
         }
 
-    }
 
-    // إذا المنتج غير موجود نضيفه
-    else {
+        /* المنتج جديد */
 
-        const {
-            error: insertError
-        } = await supabaseClient
-            .from("order_items")
-            .insert({
+        else {
+
+            inserts.push({
 
                 order_id:
                     order.id,
@@ -2671,15 +2728,80 @@ async function addProduct(product, quantity = 1) {
 
             });
 
+        }
+
+    });
+
+
+    /* ==========================================
+       إدخال كل المنتجات الجديدة دفعة واحدة
+    ========================================== */
+
+    if (inserts.length > 0) {
+
+        const {
+            error: insertError
+        } = await supabaseClient
+            .from("order_items")
+            .insert(inserts);
+
         if (insertError) {
             throw insertError;
         }
 
     }
 
-    // إعادة حساب الإجمالي
+
+    /* ==========================================
+       تحديث المنتجات الموجودة بالتوازي
+    ========================================== */
+
+    if (updates.length > 0) {
+
+        const results =
+            await Promise.all(
+
+                updates.map(item =>
+
+                    supabaseClient
+                        .from("order_items")
+                        .update({
+
+                            quantity:
+                                item.quantity,
+
+                            product_code:
+                                item.product_code
+
+                        })
+                        .eq(
+                            "id",
+                            item.id
+                        )
+
+                )
+
+            );
+
+
+        const updateError =
+            results.find(
+                result => result.error
+            );
+
+        if (updateError) {
+            throw updateError.error;
+        }
+
+    }
+
+
+    /* ==========================================
+       حساب الإجمالي مرة واحدة فقط
+    ========================================== */
+
     const {
-        data: items,
+        data: allItems,
         error: totalError
     } = await supabaseClient
         .from("order_items")
@@ -2693,44 +2815,42 @@ async function addProduct(product, quantity = 1) {
         throw totalError;
     }
 
-    if (items) {
 
-        const total =
-            items.reduce(
-                (sum, item) => {
+    const total =
+        (allItems || []).reduce(
+            (sum, item) => {
 
-                    return (
-                        sum +
-                        (
-                            Number(item.price) || 0
-                        ) *
-                        (
-                            Number(item.quantity) || 1
-                        )
+                return sum +
+                    (
+                        Number(item.price) || 0
+                    ) *
+                    (
+                        Number(item.quantity) || 0
                     );
 
-                },
-                0
-            );
+            },
+            0
+        );
 
-        const {
-            error: updateTotalError
-        } = await supabaseClient
-            .from("orders")
-            .update({
-                total: total
-            })
-            .eq(
-                "id",
-                order.id
-            );
 
-        if (updateTotalError) {
-            throw updateTotalError;
-        }
+    /* ==========================================
+       تحديث إجمالي الطلب مرة واحدة
+    ========================================== */
 
+    const {
+        error: updateTotalError
+    } = await supabaseClient
+        .from("orders")
+        .update({
+            total: total
+        })
+        .eq(
+            "id",
+            order.id
+        );
+
+    if (updateTotalError) {
+        throw updateTotalError;
     }
 
-    // مهم جدًا:
-    // لا يوجد alert هنا
 }
