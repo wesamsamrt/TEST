@@ -11,11 +11,19 @@ const logoutButton = document.getElementById("logoutButton");
 /* =========================
    إظهار لوحة الإدارة
 ========================= */
-
 function showAdmin() {
 
-    loginPage.style.display = "none";
-    adminPage.style.display = "block";
+    const loginPage = document.getElementById("loginPage");
+    const adminPage = document.getElementById("adminPage");
+
+    if (loginPage) {
+        loginPage.style.display = "none";
+    }
+
+    if (adminPage) {
+        adminPage.style.display = "block";
+    }
+    loadDashboardLatestOrders();
 
 }
 
@@ -23,11 +31,21 @@ function showAdmin() {
 /* =========================
    إظهار تسجيل الدخول
 ========================= */
-
 function showLogin() {
 
-    loginPage.style.display = "flex";
-    adminPage.style.display = "none";
+    const loginPage =
+        document.getElementById("loginPage");
+
+    const adminPage =
+        document.getElementById("adminPage");
+
+    if (loginPage) {
+        loginPage.style.display = "flex";
+    }
+
+    if (adminPage) {
+        adminPage.style.display = "none";
+    }
 
 }
 
@@ -403,12 +421,12 @@ productImage.addEventListener("change", function () {
 });
 
 /* فتح إدارة المنتجات */
-
 productsButton.addEventListener("click", async function () {
 
-    dashboardContent.style.display = "none";
-
-    productsAdmin.style.display = "block";
+    document.getElementById("adminPage").style.display = "none";
+    document.getElementById("categoriesAdmin").style.display = "none";
+    document.getElementById("ordersAdmin").style.display = "none";
+    document.getElementById("productsAdmin").style.display = "block";
 
     await loadAdminProducts();
 
@@ -416,15 +434,13 @@ productsButton.addEventListener("click", async function () {
 
 
 /* الرجوع */
-
 backToDashboard.addEventListener("click", function () {
 
-    productsAdmin.style.display = "none";
+    document.getElementById("productsAdmin").style.display = "none";
 
-    dashboardContent.style.display = "block";
+    document.getElementById("adminPage").style.display = "block";
 
 });
-
 
 /* تحميل المنتجات */
 async function loadAdminProducts() {
@@ -661,6 +677,11 @@ const productFormMessage =
 addProductButton.addEventListener("click", function () {
 
     productFormCard.style.display = "block";
+    document.getElementById(
+    "productCompatibilityType"
+).value = "device";
+
+updateProductCompatibilityFields();
 
     productFormMessage.textContent = "";
 
@@ -691,7 +712,33 @@ function clearProductForm() {
     document.getElementById("productQuantity").value = "";
     document.getElementById("productPrice").value = "";
 
+const compatibilitySelect =
+    document.getElementById(
+        "productCompatibilityType"
+    );
 
+if (compatibilitySelect) {
+
+    compatibilitySelect.value =
+        "device";
+
+}
+
+
+const compatibleDevicesInput =
+    document.getElementById(
+        "compatibleDevices"
+    );
+
+if (compatibleDevicesInput) {
+
+    compatibleDevicesInput.value =
+        "";
+
+}
+
+
+updateProductCompatibilityFields();
     selectedProductImage = null;
 
 document.getElementById("productImage").value = "";
@@ -898,21 +945,74 @@ async function saveNewProduct() {
 
 
     if (
-        !category ||
-        !productType ||
-        !type ||
-        !company ||
-        !model
+    !category ||
+    !productType ||
+    !type
+) {
+
+    productFormMessage.textContent =
+        "فضلاً أكمل بيانات المنتج المطلوبة";
+
+    productFormMessage.style.color =
+        "#e05265";
+
+    return;
+}
+
+const compatibilityType =
+    document.getElementById(
+        "productCompatibilityType"
+    ).value;
+
+
+
+/* =========================
+   التحقق حسب نوع التوافق
+========================= */
+
+if (
+    compatibilityType === "device" &&
+    (!company || !model)
+) {
+
+    productFormMessage.textContent =
+        "اكتب الشركة والموديل لهذا المنتج";
+
+    productFormMessage.style.color =
+        "#e05265";
+
+    return;
+}
+
+
+let compatibleDevicesArray = [];
+
+
+if (
+    compatibilityType === "multi"
+) {
+
+    compatibleDevicesArray =
+        compatibleDevices.value
+            .split("\n")
+            .map(item => item.trim())
+            .filter(Boolean);
+
+
+    if (
+        compatibleDevicesArray.length === 0
     ) {
 
         productFormMessage.textContent =
-            "فضلاً أكمل بيانات المنتج المطلوبة";
+            "أدخل جهازًا واحدًا على الأقل";
 
         productFormMessage.style.color =
             "#e05265";
 
         return;
     }
+
+}
 
 
     saveProductButton.disabled = true;
@@ -964,23 +1064,35 @@ catch (error) {
                 .from("products")
                 .update({
 
-                    category: category,
+    category: category,
 
-                    product_type: productType,
+    product_type: productType,
 
-                    type: type,
+    type: type,
 
-                    company: company,
+    company:
+        compatibilityType === "device"
+            ? company
+            : null,
 
-                    model: model,
+    model:
+        compatibilityType === "device"
+            ? model
+            : null,
 
-                    color: color,
+    color: color,
 
-                    quantity: quantity || 0,
+    quantity: quantity || 0,
 
-                    price: price || 0
+    price: price || 0,
 
-                })
+    compatibility_type:
+        compatibilityType,
+
+    compatible_devices:
+        compatibleDevicesArray
+
+})
                 .eq("id", editingProductId)
                 .select()
                 .single();
@@ -992,27 +1104,39 @@ catch (error) {
         result =
             await supabaseClient
                 .from("products")
-                .insert({
+               .insert({
 
-                      category: category,
+    category: category,
 
-                    product_type: productType,
+    product_type: productType,
 
-                      type: type,
+    type: type,
 
-                 company: company,
+    company:
+        compatibilityType === "device"
+            ? company
+            : null,
 
-              model: model,
+    model:
+        compatibilityType === "device"
+            ? model
+            : null,
 
-                  color: color,
+    color: color,
 
-                 quantity: quantity || 0,
+    quantity: quantity || 0,
 
-                  price: price || 0,
+    price: price || 0,
 
-                 image: imageUrl
+    image: imageUrl,
 
-                    })
+    compatibility_type:
+        compatibilityType,
+
+    compatible_devices:
+        compatibleDevicesArray
+
+})
                 .select()
                 .single();
 
@@ -1207,8 +1331,11 @@ async function deleteProduct(id) {
 
 
 /* =========================================================
-   إدارة التصنيفات
-========================================================= */
+   إدارة التصنيفات + رفع الأيقونات
+   ========================================================= */
+
+const CATEGORY_BUCKET = "category-icons";
+
 
 const categoriesButton =
     document.getElementById("categoriesButton");
@@ -1237,44 +1364,307 @@ const categoriesList =
 const categoryFormMessage =
     document.getElementById("categoryFormMessage");
 
+const categoryIconFile =
+    document.getElementById("categoryIconFile");
+
+const categoryIconPreview =
+    document.getElementById("categoryIconPreview");
+
 
 let adminCategories = [];
 let editingCategoryId = null;
 
 
-/* فتح التصنيفات */
+/* =========================================================
+   اختيار صورة الأيقونة
+   ========================================================= */
 
-categoriesButton.addEventListener(
-    "click",
-    async function () {
+categoryIconFile.addEventListener("change", function () {
 
-        dashboardContent.style.display = "none";
+    const file = this.files[0];
 
-        productsAdmin.style.display = "none";
-
-        categoriesAdmin.style.display = "block";
-
-        await loadAdminCategories();
-
+    if (!file) {
+        categoryIconPreview.innerHTML =
+            "<span>لم يتم اختيار أيقونة</span>";
+        return;
     }
-);
 
 
-/* الرجوع */
+    const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/svg+xml"
+    ];
 
-backFromCategories.addEventListener(
-    "click",
-    function () {
 
-        categoriesAdmin.style.display = "none";
+    if (!allowedTypes.includes(file.type)) {
 
-        dashboardContent.style.display = "block";
+        alert(
+            "نوع الصورة غير مدعوم.\n\n" +
+            "المسموح: PNG / JPG / WEBP / SVG"
+        );
 
+        this.value = "";
+
+        categoryIconPreview.innerHTML =
+            "<span>لم يتم اختيار أيقونة</span>";
+
+        return;
     }
-);
 
 
-/* تحميل التصنيفات */
+    /* الحد الأقصى 2MB */
+
+    if (file.size > 2 * 1024 * 1024) {
+
+        alert(
+            "حجم الصورة كبير جداً.\n\n" +
+            "الحد الأقصى هو 2MB."
+        );
+
+        this.value = "";
+
+        categoryIconPreview.innerHTML =
+            "<span>لم يتم اختيار أيقونة</span>";
+
+        return;
+    }
+
+
+    const previewURL =
+        URL.createObjectURL(file);
+
+
+    categoryIconPreview.innerHTML = `
+        <img
+            src="${previewURL}"
+            alt="معاينة الأيقونة"
+        >
+    `;
+
+});
+
+
+/* =========================================================
+   عرض أيقونة موجودة مسبقاً
+   ========================================================= */
+
+function showCategoryIcon(icon) {
+
+    if (!icon) {
+
+        categoryIconPreview.innerHTML =
+            "<span>لم يتم اختيار أيقونة</span>";
+
+        return;
+    }
+
+
+    /* إذا كانت صورة */
+
+    if (
+        typeof icon === "string" &&
+        icon.startsWith("http")
+    ) {
+
+        categoryIconPreview.innerHTML = `
+            <img
+                src="${icon}"
+                alt="أيقونة التصنيف"
+            >
+        `;
+
+        return;
+    }
+
+
+    /* إذا كانت أيقونة قديمة عبارة عن إيموجي */
+
+    categoryIconPreview.innerHTML = `
+        <span style="
+            font-size:45px;
+        ">
+            ${icon}
+        </span>
+    `;
+}
+
+
+/* =========================================================
+   استخراج مسار الصورة من Supabase Storage
+   ========================================================= */
+
+function getStoragePathFromPublicUrl(url) {
+
+    if (!url || typeof url !== "string") {
+        return null;
+    }
+
+
+    const marker =
+        `/storage/v1/object/public/${CATEGORY_BUCKET}/`;
+
+
+    const index =
+        url.indexOf(marker);
+
+
+    if (index === -1) {
+        return null;
+    }
+
+
+    return decodeURIComponent(
+        url.substring(
+            index + marker.length
+        )
+    );
+}
+
+
+/* =========================================================
+   حذف صورة من Storage
+   ========================================================= */
+
+async function deleteCategoryIcon(iconUrl) {
+
+    const path =
+        getStoragePathFromPublicUrl(iconUrl);
+
+
+    if (!path) {
+        return;
+    }
+
+
+    const { error } =
+        await supabaseClient
+            .storage
+            .from(CATEGORY_BUCKET)
+            .remove([path]);
+
+
+    if (error) {
+
+        console.error(
+            "خطأ في حذف الأيقونة القديمة:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   رفع صورة جديدة
+   ========================================================= */
+
+async function uploadCategoryIcon(file, categoryId) {
+
+    if (!file) {
+        return null;
+    }
+
+
+    const extension =
+        file.name
+            .split(".")
+            .pop()
+            .toLowerCase();
+
+
+    const safeExtension =
+        extension.replace(
+            /[^a-z0-9]/gi,
+            ""
+        ) || "png";
+
+
+    const fileName =
+        `${crypto.randomUUID()}.${safeExtension}`;
+
+
+    const filePath =
+        `${categoryId}/${fileName}`;
+
+
+    const { error: uploadError } =
+        await supabaseClient
+            .storage
+            .from(CATEGORY_BUCKET)
+            .upload(
+                filePath,
+                file,
+                {
+                    cacheControl: "3600",
+                    upsert: false,
+                    contentType: file.type
+                }
+            );
+
+
+    if (uploadError) {
+
+        console.error(
+            "خطأ في رفع الأيقونة:",
+            uploadError
+        );
+
+        throw uploadError;
+    }
+
+
+    const {
+        data: publicData
+    } =
+        supabaseClient
+            .storage
+            .from(CATEGORY_BUCKET)
+            .getPublicUrl(filePath);
+
+
+    if (!publicData?.publicUrl) {
+
+        throw new Error(
+            "لم يتم الحصول على رابط الأيقونة"
+        );
+    }
+
+
+    return publicData.publicUrl;
+}
+
+
+/* =========================================================
+   فتح التصنيفات
+   ========================================================= */
+categoriesButton.addEventListener("click", async function () {
+
+    document.getElementById("adminPage").style.display = "none";
+    document.getElementById("productsAdmin").style.display = "none";
+    document.getElementById("ordersAdmin").style.display = "none";
+    document.getElementById("categoriesAdmin").style.display = "block";
+
+    await loadAdminCategories();
+
+});
+
+
+/* =========================================================
+   الرجوع
+   ========================================================= */
+backFromCategories.addEventListener("click", function () {
+
+    document.getElementById("categoriesAdmin").style.display = "none";
+
+    document.getElementById("adminPage").style.display = "block";
+
+});
+
+
+/* =========================================================
+   تحميل التصنيفات
+   ========================================================= */
 
 async function loadAdminCategories() {
 
@@ -1285,11 +1675,16 @@ async function loadAdminCategories() {
     `;
 
 
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await supabaseClient
             .from("categories")
             .select("*")
-            .order("id", { ascending: true });
+            .order("id", {
+                ascending: true
+            });
 
 
     if (error) {
@@ -1306,14 +1701,18 @@ async function loadAdminCategories() {
     }
 
 
-    adminCategories = data || [];
+    adminCategories =
+        data || [];
+
 
     renderAdminCategories();
 
 }
 
 
-/* عرض التصنيفات */
+/* =========================================================
+   عرض التصنيفات
+   ========================================================= */
 
 function renderAdminCategories() {
 
@@ -1337,15 +1736,43 @@ function renderAdminCategories() {
         const item =
             document.createElement("div");
 
+
         item.className =
             "category-admin-item";
+
+
+        let iconHTML =
+            "📦";
+
+
+        if (
+            category.icon &&
+            category.icon.startsWith("http")
+        ) {
+
+            iconHTML = `
+                <img
+                    src="${category.icon}"
+                    alt="${category.name}"
+                >
+            `;
+
+        }
+
+        else if (category.icon) {
+
+            iconHTML =
+                category.icon;
+
+        }
 
 
         item.innerHTML = `
 
             <div class="category-admin-icon">
-                ${category.icon || "📦"}
+                ${iconHTML}
             </div>
+
 
             <div class="category-admin-info">
 
@@ -1355,6 +1782,7 @@ function renderAdminCategories() {
 
             </div>
 
+
             <div class="category-admin-actions">
 
                 <button
@@ -1363,6 +1791,7 @@ function renderAdminCategories() {
                 >
                     ✏️
                 </button>
+
 
                 <button
                     class="delete-category"
@@ -1383,21 +1812,39 @@ function renderAdminCategories() {
 }
 
 
-/* إضافة تصنيف */
+/* =========================================================
+   إضافة تصنيف جديد
+   ========================================================= */
 
 addCategoryButton.addEventListener(
     "click",
     function () {
 
-        editingCategoryId = null;
+        editingCategoryId =
+            null;
 
-        document.getElementById("categoryName").value = "";
-        document.getElementById("categoryIcon").value = "";
+
+        document.getElementById(
+            "categoryName"
+        ).value = "";
+
+
+        categoryIconFile.value =
+            "";
+
+
+        showCategoryIcon(
+            null
+        );
+
 
         saveCategoryButton.textContent =
             "حفظ التصنيف";
 
-        categoryFormMessage.textContent = "";
+
+        categoryFormMessage.textContent =
+            "";
+
 
         categoryFormCard.style.display =
             "block";
@@ -1406,7 +1853,9 @@ addCategoryButton.addEventListener(
 );
 
 
-/* إلغاء */
+/* =========================================================
+   إلغاء
+   ========================================================= */
 
 cancelCategoryButton.addEventListener(
     "click",
@@ -1415,13 +1864,21 @@ cancelCategoryButton.addEventListener(
         categoryFormCard.style.display =
             "none";
 
-        editingCategoryId = null;
+
+        editingCategoryId =
+            null;
+
+
+        categoryIconFile.value =
+            "";
 
     }
 );
 
 
-/* حفظ */
+/* =========================================================
+   حفظ
+   ========================================================= */
 
 saveCategoryButton.addEventListener(
     "click",
@@ -1432,14 +1889,16 @@ saveCategoryButton.addEventListener(
 async function saveCategory() {
 
     const name =
-        document.getElementById("categoryName")
-            .value
-            .trim();
+        document.getElementById(
+            "categoryName"
+        )
+        .value
+        .trim();
 
-    const icon =
-        document.getElementById("categoryIcon")
-            .value
-            .trim();
+
+    const file =
+        categoryIconFile.files[0] ||
+        null;
 
 
     if (!name) {
@@ -1447,118 +1906,315 @@ async function saveCategory() {
         categoryFormMessage.textContent =
             "اكتب اسم التصنيف";
 
+
         categoryFormMessage.style.color =
             "#e05265";
+
 
         return;
     }
 
 
-    saveCategoryButton.disabled = true;
+    saveCategoryButton.disabled =
+        true;
+
 
     saveCategoryButton.textContent =
         "جاري الحفظ...";
 
 
-    let result;
+    try {
+
+        /* =================================================
+           تعديل تصنيف
+           ================================================= */
+
+        if (editingCategoryId) {
+
+            const oldCategory =
+                adminCategories.find(
+                    item =>
+                        item.id ===
+                        editingCategoryId
+                );
 
 
-    if (editingCategoryId) {
+            if (!oldCategory) {
 
-        result =
-            await supabaseClient
-                .from("categories")
-                .update({
-                    name: name,
-                    icon: icon || "📦"
-                })
-                .eq("id", editingCategoryId);
+                throw new Error(
+                    "لم يتم العثور على التصنيف"
+                );
+            }
+
+
+            let newIcon =
+                oldCategory.icon ||
+                null;
+
+
+            /* إذا اختار المستخدم صورة جديدة */
+
+            if (file) {
+
+                newIcon =
+                    await uploadCategoryIcon(
+                        file,
+                        editingCategoryId
+                    );
+
+            }
+
+
+            const {
+                error: updateError
+            } =
+                await supabaseClient
+                    .from("categories")
+                    .update({
+                        name: name,
+                        icon: newIcon
+                    })
+                    .eq(
+                        "id",
+                        editingCategoryId
+                    );
+
+
+            if (updateError) {
+
+                /* إذا تم رفع الصورة ولكن فشل
+                   تحديث قاعدة البيانات، نحذف
+                   الصورة الجديدة */
+
+                if (
+                    file &&
+                    newIcon
+                ) {
+
+                    await deleteCategoryIcon(
+                        newIcon
+                    );
+
+                }
+
+
+                throw updateError;
+            }
+
+
+            /* بعد نجاح تحديث قاعدة البيانات
+               نحذف الصورة القديمة */
+
+            if (
+                file &&
+                oldCategory.icon &&
+                oldCategory.icon.startsWith("http")
+            ) {
+
+                await deleteCategoryIcon(
+                    oldCategory.icon
+                );
+
+            }
+
+
+            categoryFormMessage.textContent =
+                "تم تعديل التصنيف بنجاح ✅";
+
+
+            categoryFormMessage.style.color =
+                "#2e9d69";
+
+        }
+
+
+        /* =================================================
+           إضافة تصنيف جديد
+           ================================================= */
+
+        else {
+
+            /* أولاً نضيف التصنيف */
+
+            const {
+                data: insertedCategory,
+                error: insertError
+            } =
+                await supabaseClient
+                    .from("categories")
+                    .insert({
+                        name: name,
+                        icon: null
+                    })
+                    .select()
+                    .single();
+
+
+            if (insertError) {
+                throw insertError;
+            }
+
+
+            let newIcon =
+                null;
+
+
+            /* إذا اختار المستخدم صورة */
+
+            if (file) {
+
+                newIcon =
+                    await uploadCategoryIcon(
+                        file,
+                        insertedCategory.id
+                    );
+
+
+                /* حفظ رابط الصورة */
+
+                const {
+                    error: iconUpdateError
+                } =
+                    await supabaseClient
+                        .from("categories")
+                        .update({
+                            icon: newIcon
+                        })
+                        .eq(
+                            "id",
+                            insertedCategory.id
+                        );
+
+
+                if (iconUpdateError) {
+
+                    /* حذف الصورة إذا فشل
+                       حفظ الرابط */
+
+                    await deleteCategoryIcon(
+                        newIcon
+                    );
+
+
+                    /* حذف التصنيف */
+
+                    await supabaseClient
+                        .from("categories")
+                        .delete()
+                        .eq(
+                            "id",
+                            insertedCategory.id
+                        );
+
+
+                    throw iconUpdateError;
+                }
+
+            }
+
+
+            categoryFormMessage.textContent =
+                "تمت إضافة التصنيف بنجاح ✅";
+
+
+            categoryFormMessage.style.color =
+                "#2e9d69";
+
+        }
+
+
+        editingCategoryId =
+            null;
+
+
+        categoryIconFile.value =
+            "";
+
+
+        categoryFormCard.style.display =
+            "none";
+
+
+        await loadAdminCategories();
 
     }
 
-    else {
+    catch (error) {
 
-        result =
-            await supabaseClient
-                .from("categories")
-                .insert({
-                    name: name,
-                    icon: icon || "📦"
-                });
+        console.error(
+            "Category Save Error:",
+            error
+        );
 
-    }
-
-
-    if (result.error) {
 
         categoryFormMessage.textContent =
-            result.error.message;
+            error.message ||
+            "حدث خطأ أثناء حفظ التصنيف";
+
 
         categoryFormMessage.style.color =
             "#e05265";
 
-        saveCategoryButton.disabled = false;
-
-        saveCategoryButton.textContent =
-            editingCategoryId
-                ? "حفظ التعديل"
-                : "حفظ التصنيف";
-
-        return;
     }
 
 
-    categoryFormMessage.textContent =
-        editingCategoryId
-            ? "تم تعديل التصنيف ✅"
-            : "تمت إضافة التصنيف ✅";
+    finally {
 
-    categoryFormMessage.style.color =
-        "#2e9d69";
+        saveCategoryButton.disabled =
+            false;
 
 
-    editingCategoryId = null;
+        saveCategoryButton.textContent =
+            "حفظ التصنيف";
 
-    categoryFormCard.style.display =
-        "none";
-
-
-    await loadAdminCategories();
-
-
-    saveCategoryButton.disabled = false;
-
-    saveCategoryButton.textContent =
-        "حفظ التصنيف";
+    }
 
 }
 
 
-/* تعديل */
+/* =========================================================
+   تعديل التصنيف
+   ========================================================= */
 
 async function editCategory(id) {
 
     const category =
         adminCategories.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
-    if (!category) return;
+    if (!category) {
+        return;
+    }
 
 
-    editingCategoryId = id;
+    editingCategoryId =
+        id;
 
 
-    document.getElementById("categoryName").value =
+    document.getElementById(
+        "categoryName"
+    ).value =
         category.name || "";
 
-    document.getElementById("categoryIcon").value =
-        category.icon || "";
+
+    categoryIconFile.value =
+        "";
+
+
+    showCategoryIcon(
+        category.icon
+    );
 
 
     saveCategoryButton.textContent =
         "حفظ التعديل";
+
+
+    categoryFormMessage.textContent =
+        "";
 
 
     categoryFormCard.style.display =
@@ -1572,17 +2228,22 @@ async function editCategory(id) {
 }
 
 
-/* حذف */
+/* =========================================================
+   حذف التصنيف + حذف الأيقونة
+   ========================================================= */
 
 async function deleteCategory(id) {
 
     const category =
         adminCategories.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
-    if (!category) return;
+    if (!category) {
+        return;
+    }
 
 
     const confirmed =
@@ -1591,32 +2252,70 @@ async function deleteCategory(id) {
         );
 
 
-    if (!confirmed) return;
-
-
-    const { error } =
-        await supabaseClient
-            .from("categories")
-            .delete()
-            .eq("id", id);
-
-
-    if (error) {
-
-        alert(
-            "حدث خطأ:\n" +
-            error.message
-        );
-
+    if (!confirmed) {
         return;
     }
 
 
-    await loadAdminCategories();
+    try {
 
-    alert("تم حذف التصنيف بنجاح ✅");
+        /* حذف التصنيف من قاعدة البيانات */
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("categories")
+                .delete()
+                .eq("id", id);
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        /* حذف صورة الأيقونة من Storage */
+
+        if (
+            category.icon &&
+            category.icon.startsWith("http")
+        ) {
+
+            await deleteCategoryIcon(
+                category.icon
+            );
+
+        }
+
+
+        await loadAdminCategories();
+
+
+        alert(
+            "تم حذف التصنيف والأيقونة بنجاح ✅"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Delete Category Error:",
+            error
+        );
+
+
+        alert(
+            "حدث خطأ أثناء حذف التصنيف:\n" +
+            error.message
+        );
+
+    }
 
 }
+
+
 
 
 
@@ -1639,39 +2338,48 @@ const backFromOrders =
 const adminOrders =
     document.getElementById("adminOrders");
 
+/* =========================================================
+   فتح صفحة الطلبات
+========================================================= */
 
-/* فتح الطلبات */
+ordersButton.addEventListener("click", async function () {
 
-ordersButton.addEventListener(
-    "click",
-    async function () {
+    // إخفاء الصفحة الرئيسية
+    const adminPage = document.getElementById("adminPage");
 
-        dashboardContent.style.display = "none";
-
-        productsAdmin.style.display = "none";
-
-        categoriesAdmin.style.display = "none";
-
-        ordersAdmin.style.display = "block";
-
-        await loadAdminOrders();
-
+    if (adminPage) {
+        adminPage.style.display = "none";
     }
-);
+
+    // إخفاء المنتجات
+    if (productsAdmin) {
+        productsAdmin.style.display = "none";
+    }
+
+    // إخفاء التصنيفات
+    if (categoriesAdmin) {
+        categoriesAdmin.style.display = "none";
+    }
+
+    // إظهار الطلبات
+    if (ordersAdmin) {
+        ordersAdmin.style.display = "block";
+    }
+
+    // تحميل الطلبات
+    await loadAdminOrders();
+
+});
 
 
 /* الرجوع */
+backFromOrders.addEventListener("click", function () {
 
-backFromOrders.addEventListener(
-    "click",
-    function () {
+    document.getElementById("ordersAdmin").style.display = "none";
 
-        ordersAdmin.style.display = "none";
+    document.getElementById("adminPage").style.display = "block";
 
-        dashboardContent.style.display = "block";
-
-    }
-);
+});
 
 
 /* تحميل الطلبات */
@@ -1765,6 +2473,186 @@ if (orders) {
 
 }
 
+
+const dashboardOrdersButton =
+    document.getElementById("dashboardOrdersButton");
+
+
+if (dashboardOrdersButton) {
+
+    dashboardOrdersButton.addEventListener(
+        "click",
+        function () {
+
+            document.getElementById("adminPage").style.display =
+                "none";
+
+            document.getElementById("productsAdmin").style.display =
+                "none";
+
+            document.getElementById("categoriesAdmin").style.display =
+                "none";
+
+            document.getElementById("ordersAdmin").style.display =
+                "block";
+
+            loadAdminOrders();
+
+        }
+    );
+
+}
+
+
+
+/* =========================================================
+   آخر الطلبات في الصفحة الرئيسية
+========================================================= */
+
+async function loadDashboardLatestOrders() {
+
+    const container =
+        document.getElementById("dashboardLatestOrders");
+
+    if (!container) {
+        console.error(
+            "لم يتم العثور على dashboardLatestOrders"
+        );
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="dashboard-empty">
+            جاري تحميل الطلبات...
+        </div>
+    `;
+
+    try {
+
+        const {
+            data: orders,
+            error
+        } = await supabaseClient
+            .from("orders")
+            .select(`
+                id,
+                status,
+                customer_name,
+                customer_phone,
+                total,
+                created_at
+            `)
+            .order("id", {
+                ascending: false
+            })
+            .limit(5);
+
+
+        if (error) {
+
+            console.error(
+                "Dashboard Orders Error:",
+                error
+            );
+
+            container.innerHTML = `
+                <div class="dashboard-empty">
+                    حدث خطأ أثناء تحميل الطلبات
+                </div>
+            `;
+
+            return;
+        }
+
+
+        if (!orders || orders.length === 0) {
+
+            container.innerHTML = `
+                <div class="dashboard-empty">
+                    لا توجد طلبات حتى الآن 📋
+                </div>
+            `;
+
+            return;
+        }
+
+
+        container.innerHTML = "";
+
+
+        orders.forEach(order => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "dashboard-order-row";
+
+
+            const status =
+                order.status || "جديد";
+
+
+            const total =
+                Number(order.total || 0)
+                    .toFixed(2);
+
+
+            const customer =
+                order.customer_name || "عميل";
+
+
+            row.innerHTML = `
+
+                <div class="dashboard-order-info">
+
+                    <strong>
+                        الطلب #${order.id}
+                    </strong>
+
+                    <span>
+                        ${customer}
+                    </span>
+
+                </div>
+
+
+                <div class="dashboard-order-price">
+
+                    <strong>
+                        ${total} ر.س
+                    </strong>
+
+                    <span class="dashboard-order-status">
+                        ${status}
+                    </span>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(row);
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Dashboard Latest Orders Error:",
+            error
+        );
+
+        container.innerHTML = `
+            <div class="dashboard-empty">
+                حدث خطأ أثناء تحميل الطلبات
+            </div>
+        `;
+
+    }
+
+}
 
 /* عرض طلب واحد */
 
@@ -4285,5 +5173,130 @@ function closeOrderProductPicker() {
     if (picker) {
         picker.remove();
     }
+
+}
+
+/* =========================================================
+   توافق المنتج
+========================================================= */
+
+const productCompatibilityType =
+    document.getElementById(
+        "productCompatibilityType"
+    );
+
+const productCompanyGroup =
+    document.getElementById(
+        "productCompanyGroup"
+    );
+
+const productModelGroup =
+    document.getElementById(
+        "productModelGroup"
+    );
+
+const compatibleDevicesGroup =
+    document.getElementById(
+        "compatibleDevicesGroup"
+    );
+
+const compatibleDevices =
+    document.getElementById(
+        "compatibleDevices"
+    );
+
+
+function updateProductCompatibilityFields() {
+
+    if (!productCompatibilityType) {
+        return;
+    }
+
+    const type =
+        productCompatibilityType.value;
+
+
+    /* =========================
+       منتج عام
+    ========================= */
+
+    if (type === "general") {
+
+        productCompanyGroup.style.display =
+            "none";
+
+        productModelGroup.style.display =
+            "none";
+
+        compatibleDevicesGroup.style.display =
+            "none";
+
+        document.getElementById(
+            "productCompany"
+        ).value = "";
+
+        document.getElementById(
+            "productModel"
+        ).value = "";
+
+        compatibleDevices.value = "";
+
+    }
+
+
+    /* =========================
+       منتج مخصص لجهاز
+    ========================= */
+
+    else if (type === "device") {
+
+        productCompanyGroup.style.display =
+            "block";
+
+        productModelGroup.style.display =
+            "block";
+
+        compatibleDevicesGroup.style.display =
+            "none";
+
+        compatibleDevices.value = "";
+
+    }
+
+
+    /* =========================
+       عدة أجهزة
+    ========================= */
+
+    else if (type === "multi") {
+
+        productCompanyGroup.style.display =
+            "none";
+
+        productModelGroup.style.display =
+            "none";
+
+        compatibleDevicesGroup.style.display =
+            "block";
+
+        document.getElementById(
+            "productCompany"
+        ).value = "";
+
+        document.getElementById(
+            "productModel"
+        ).value = "";
+
+    }
+
+}
+
+
+if (productCompatibilityType) {
+
+    productCompatibilityType.addEventListener(
+        "change",
+        updateProductCompatibilityFields
+    );
 
 }

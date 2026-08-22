@@ -108,7 +108,80 @@ function groupProductsByCode(products) {
 /* =========================================================
    عرض المنتجات
 ========================================================= */
+/* =========================================================
+   نص توافق المنتج
+========================================================= */
 
+function getProductCompatibilityText(product) {
+
+    const type =
+        product.compatibility_type || "device";
+
+
+    /* المنتج العام */
+
+    if (type === "general") {
+
+        return `
+            <span class="product-compatibility general">
+                متوافق مع جميع الأجهزة
+            </span>
+        `;
+
+    }
+
+
+    /* عدة أجهزة */
+
+    if (type === "multi") {
+
+        const devices =
+            Array.isArray(product.compatible_devices)
+                ? product.compatible_devices
+                : [];
+
+
+        if (!devices.length) {
+
+            return `
+                <span class="product-compatibility">
+                    متوافق مع عدة أجهزة
+                </span>
+            `;
+
+        }
+
+
+        return `
+            <span class="product-compatibility">
+                ${devices.map(device => escapeHtml(device)).join(" • ")}
+            </span>
+        `;
+
+    }
+
+
+    /* جهاز محدد */
+
+    const company =
+        String(product.company || "").trim();
+
+    const model =
+        String(product.model || "").trim();
+
+
+    return `
+        <span class="product-compatibility">
+            ${escapeHtml(company)}
+            ${
+                company && model
+                    ? " • "
+                    : ""
+            }
+            ${escapeHtml(model)}
+        </span>
+    `;
+}
 function renderProducts(products) {
 
     const container = document.getElementById("products");
@@ -148,6 +221,9 @@ Object.keys(groups).forEach(groupKey => {
 
     const type =
         (firstProduct.type || "منتج").trim();
+
+        const compatibilityText =
+    getProductCompatibilityText(firstProduct);
 
         const card = document.createElement("div");
 
@@ -210,10 +286,9 @@ ${
 }
 
 
-            <p>
-                ${uniqueModels.length}
-                موديل متوفر
-            </p>
+           <div class="product-compatibility-wrapper">
+    ${compatibilityText}
+</div>
 
 
             <div class="product-bottom">
@@ -784,6 +859,325 @@ function openProductModal(variants) {
 
 
     /* =====================================================
+   المنتجات العامة
+===================================================== */
+
+const compatibilityType =
+    variants[0]?.compatibility_type || "device";
+
+
+if (compatibilityType === "general") {
+
+    /*
+       المنتج العام لا يحتاج ماركة ولا موديل
+    */
+
+    // إخفاء الماركة
+    companySelect.style.display = "none";
+
+    if (companySelect.previousElementSibling) {
+        companySelect.previousElementSibling.style.display = "none";
+    }
+
+
+    // إخفاء الموديل
+    modelSelect.style.display = "none";
+
+    if (modelSelect.previousElementSibling) {
+        modelSelect.previousElementSibling.style.display = "none";
+    }
+
+
+    // تغيير العنوان
+    const modalTitle =
+        modal.querySelector(".product-modal-content h2");
+
+    if (modalTitle) {
+        modalTitle.textContent = "اختيار الكمية";
+    }
+
+
+    /*
+       كل منتجات هذا الكود تعتبر خيارات مباشرة
+       بدون ماركة وموديل
+    */
+
+    const colorProducts = [];
+
+    const usedColors = new Set();
+
+
+    variants.forEach(product => {
+
+        const color =
+            String(product.color || "").trim();
+
+
+        // إذا المنتج بدون لون
+        if (!color) {
+
+            if (!usedColors.has("__NO_COLOR__")) {
+
+                usedColors.add("__NO_COLOR__");
+
+                colorProducts.push(product);
+
+            }
+
+            return;
+        }
+
+
+        const colorKey =
+            color.toLowerCase();
+
+
+        // منع تكرار اللون
+        if (!usedColors.has(colorKey)) {
+
+            usedColors.add(colorKey);
+
+            colorProducts.push(product);
+
+        }
+
+    });
+
+
+    selectedColorProducts =
+        colorProducts;
+
+
+    /*
+       عنوان الكمية
+    */
+
+    const title =
+        document.createElement("div");
+
+    title.className =
+        "colors-title";
+
+    title.textContent =
+        colorProducts.length > 1
+            ? "اختر الكمية لكل لون"
+            : "اختر الكمية";
+
+    colorsContainer.appendChild(title);
+
+
+    /*
+       إنشاء صفوف الكميات
+    */
+
+    colorProducts.forEach(product => {
+
+        const available =
+            Math.max(
+                0,
+                Number(product.quantity) || 0
+            );
+
+
+        const color =
+            String(product.color || "").trim();
+
+
+        const row =
+            document.createElement("div");
+
+        row.className =
+            "color-quantity-row";
+
+
+        row.dataset.productId =
+            product.id;
+
+
+        row.innerHTML = `
+
+            <div class="color-info">
+
+                <div class="color-name">
+                    ${escapeHtml(
+                        color || "المنتج"
+                    )}
+                </div>
+
+                <div class="color-stock">
+                    المتوفر: ${available}
+                </div>
+
+            </div>
+
+
+            <div class="color-quantity-control">
+
+                <button
+                    type="button"
+                    class="color-minus"
+                >
+                    −
+                </button>
+
+
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    class="color-quantity-input"
+                    value="0"
+                    autocomplete="off"
+                >
+
+
+                <button
+                    type="button"
+                    class="color-plus"
+                >
+                    +
+                </button>
+
+            </div>
+
+        `;
+
+
+        const input =
+            row.querySelector(
+                ".color-quantity-input"
+            );
+
+        const minus =
+            row.querySelector(
+                ".color-minus"
+            );
+
+        const plus =
+            row.querySelector(
+                ".color-plus"
+            );
+
+
+        /*
+           تحديث الكمية
+        */
+
+        function updateGeneralQuantity(value) {
+
+            let quantity =
+                parseInt(value);
+
+
+            if (isNaN(quantity)) {
+                quantity = 0;
+            }
+
+
+            if (quantity < 0) {
+                quantity = 0;
+            }
+
+
+            if (quantity > available) {
+                quantity = available;
+            }
+
+
+            input.value =
+                quantity;
+
+
+            updateStockSummary();
+
+        }
+
+
+        /*
+           ناقص
+        */
+
+        minus.addEventListener(
+            "pointerdown",
+            function(e) {
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                let quantity =
+                    parseInt(input.value) || 0;
+
+                quantity--;
+
+                updateGeneralQuantity(
+                    quantity
+                );
+
+            }
+        );
+
+
+        /*
+           زائد
+        */
+
+        plus.addEventListener(
+            "pointerdown",
+            function(e) {
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                let quantity =
+                    parseInt(input.value) || 0;
+
+                quantity++;
+
+                updateGeneralQuantity(
+                    quantity
+                );
+
+            }
+        );
+
+
+        /*
+           إدخال يدوي
+        */
+
+        input.addEventListener(
+            "input",
+            function() {
+
+                this.value =
+                    this.value.replace(
+                        /[^0-9]/g,
+                        ""
+                    );
+
+                updateGeneralQuantity(
+                    this.value
+                );
+
+            }
+        );
+
+
+        colorsContainer.appendChild(row);
+
+    });
+
+
+    /*
+       تحديث المخزون
+    */
+
+    updateStockSummary();
+
+}
+
+
+    /* =====================================================
        اختيار الماركة
     ===================================================== */
 
@@ -1124,17 +1518,17 @@ function openProductModal(variants) {
 
            minus.addEventListener("pointerdown", function (e) {
 
-    e.preventDefault();
-    e.stopPropagation();
+      e.preventDefault();
+     e.stopPropagation();
 
-    let quantity =
+      let quantity =
         parseInt(input.value) || 0;
 
-    quantity--;
+     quantity--;
 
-    updateColorQuantity(quantity);
+         updateColorQuantity(quantity);
 
-});
+        });
 
 
             /* زائد */
@@ -1175,7 +1569,7 @@ plus.addEventListener("pointerdown", function (e) {
 
         updateStockSummary();
 
-    });
+        });
 
 
     /* =====================================================
@@ -1258,22 +1652,22 @@ plus.addEventListener("pointerdown", function (e) {
         addButton.disabled =
             totalSelected <= 0;
 
-    }
+        }
 
 
-    /* =====================================================
-       إضافة جميع الألوان للسلة
-    ===================================================== */
+     /* =====================================================
+         إضافة جميع الألوان للسلة
+     ===================================================== */
 
-    addButton.onclick = async function () {
+     addButton.onclick = async function () {
 
         
 
-    /* ==========================================
+     /* ==========================================
        التأكد من تسجيل الدخول مرة واحدة فقط
-    ========================================== */
+      ========================================== */
 
-    const {
+      const {
         data: { user },
         error: userError
     } = await supabaseClient.auth.getUser();
@@ -1336,7 +1730,7 @@ plus.addEventListener("pointerdown", function (e) {
 
         }
 
-    });
+     });
 
 
     /* ==========================================

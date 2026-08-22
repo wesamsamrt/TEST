@@ -913,3 +913,21 @@ body.modal-open {
         font-size: 15px;
     }
 }
+
+
+.product-compatibility-wrapper {
+    margin-top: 8px;
+}
+
+.product-compatibility {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #777;
+    line-height: 1.7;
+}
+
+.product-compatibility.general {
+    color: #4935b5;
+    font-weight: 700;
+}
