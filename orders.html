@@ -223,6 +223,14 @@
             </p>
         </div>
 
+        <button
+            type="button"
+            onclick="window.location.href='products.html?changeRegion=1'"
+            style="margin-right:auto;border:1px solid #dedafc;border-radius:11px;background:#faf9ff;color:#6557ed;padding:9px 12px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;"
+        >
+            تغيير المنطقة
+        </button>
+
     </header>
 
 
@@ -583,6 +591,21 @@ async function loadOrders() {
     // جلب طلب المستخدم
     // =========================
 
+    // نعرض سلة منطقة العميل الحالية فقط حتى لا تختلط سلال مخازن مختلفة.
+    const selectedCustomerWarehouse =
+        localStorage.getItem("customer_warehouse") || "";
+
+    if (!selectedCustomerWarehouse) {
+        container.innerHTML = `
+            <div class="empty">
+                اختر منطقة التسوق أولاً قبل عرض السلة.
+                <br><br>
+                <button onclick="window.location.href='products.html?changeRegion=1'">اختيار المنطقة</button>
+            </div>
+        `;
+        return;
+    }
+
     const {
         data: orders,
         error: ordersError
@@ -591,6 +614,7 @@ async function loadOrders() {
         .select("*")
         .eq("user_id", user.id)
         .eq("status", "جديد")
+        .eq("warehouse", selectedCustomerWarehouse)
         .order("id", {
             ascending: false
         })
@@ -975,6 +999,11 @@ async function updateOrderTotal() {
 
     if (!user) return;
 
+    const selectedCustomerWarehouse =
+        localStorage.getItem("customer_warehouse") || "";
+
+    if (!selectedCustomerWarehouse) return;
+
 
     const {
         data: orders
@@ -983,6 +1012,7 @@ async function updateOrderTotal() {
         .select("id")
         .eq("user_id", user.id)
         .eq("status", "جديد")
+        .eq("warehouse", selectedCustomerWarehouse)
         .order("id", {
             ascending: false
         })
@@ -1138,6 +1168,22 @@ if (!customerName) {
             return;
         }
 
+        // يمنع تقديم الطلب إذا كان المندوب تابعًا لمنطقة مختلفة عن منطقة تسوق العميل.
+        const customerWarehouse = localStorage.getItem("customer_warehouse") || "";
+        const driverWarehouse = driver.warehouse || "الرياض";
+
+        if (!customerWarehouse) {
+            driverMessage.textContent = "⚠️ اختر منطقة التسوق أولًا ثم أكمل الطلب.";
+            driverMessage.style.color = "#e05265";
+            return;
+        }
+
+        if (driverWarehouse !== customerWarehouse) {
+            driverMessage.textContent = `⚠️ هذا المندوب تابع لمخزن ${driverWarehouse}، بينما منطقتك ${customerWarehouse}. الرجاء تغيير منطقتك أو اختيار مندوب مناسب.`;
+            driverMessage.style.color = "#e05265";
+            return;
+        }
+
 
         // =========================
         // المندوب صحيح
@@ -1183,6 +1229,7 @@ if (!customerName) {
             .select("*")
             .eq("user_id", user.id)
             .eq("status", "جديد")
+            .eq("warehouse", customerWarehouse)
             .order("id", {
                 ascending: false
             })
@@ -1268,7 +1315,7 @@ if (!customerName) {
             driver.name,
 
         warehouse:
-            driver.warehouse || "الرياض",
+            customerWarehouse,
 
         customer_name:
             customerName,

@@ -1,5 +1,12 @@
 let allProducts = [];
 let customerWarehouse = localStorage.getItem("customer_warehouse") || "";
+const productPageParams = new URLSearchParams(window.location.search);
+
+// يمسح المنطقة المحفوظة عند فتح الصفحة من زر تغيير المنطقة.
+if (productPageParams.get("changeRegion") === "1") {
+    customerWarehouse = "";
+    localStorage.removeItem("customer_warehouse");
+}
 
 // يعرض شاشة اختيار منطقة العميل ويحمل المخازن المتاحة للاختيار اليدوي.
 async function showCustomerWarehouseSelection() {
@@ -2375,6 +2382,12 @@ function addProductModalStyles() {
 
 // يربط زر تحديد الموقع التلقائي بدالة اختيار أقرب منطقة خدمة.
 document.getElementById("detectCustomerWarehouse")?.addEventListener("click", detectCustomerWarehouse);
+
+// يفتح شاشة المناطق ليتيح للعميل تغيير مخزن التسوق في أي وقت.
+document.getElementById("changeCustomerWarehouse")?.addEventListener("click", () => {
+    document.getElementById("customerWarehouseMessage").textContent = "";
+    showCustomerWarehouseSelection();
+});
 
 loadProducts();
 

@@ -931,6 +931,8 @@ body.modal-open {
     color: #4935b5;
     font-weight: 700;
 }
+
+.header-title { flex: 1; }.change-customer-warehouse { border: 1px solid #dedafc; border-radius: 11px; background: #faf9ff; color: var(--purple); padding: 9px 12px; font-family: inherit; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 /* شاشة اختيار منطقة العميل قبل عرض منتجات المخزن المناسب. */
 .customer-warehouse-modal { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; padding: 20px; background: rgba(17, 17, 35, .56); }
 .customer-warehouse-dialog { width: min(470px, 100%); padding: 32px; border-radius: 25px; background: #fff; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.25); font-family: "Cairo", sans-serif; }
