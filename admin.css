@@ -411,6 +411,7 @@ body {
 .warehouse-login-option strong, .warehouse-login-option span { display: block; }
 .warehouse-login-option strong { font-size: 16px; margin-bottom: 5px; }
 .warehouse-login-option span { color: var(--muted); font-size: 10px; }
+.add-warehouse-box { display: flex; gap: 8px; margin-top: 16px; }.add-warehouse-box input { min-width: 0; flex: 1; height: 44px; border: 1px solid #e8e8f0; border-radius: 12px; padding: 0 12px; font-family: inherit; }.add-warehouse-box button { width: auto; height: 44px; padding: 0 14px; }.warehouse-add-message { min-height: 20px; margin-top: 8px; color: #74788b; font-size: 11px; }
 .warehouse-back-login, .change-warehouse-button {
     border: none;
     background: transparent;
@@ -424,6 +425,7 @@ body {
 
 @media (max-width: 420px) {
     .warehouse-login-options { grid-template-columns: 1fr; }
+    .add-warehouse-box { flex-direction: column; }.add-warehouse-box button { width: 100%; }
 }
 
 .warehouse-selector {
@@ -859,6 +861,33 @@ body {
     display: grid;
     gap: 18px;
 }
+
+.transfers-admin { width: min(1100px, calc(100% - 32px)); margin: 30px auto; }
+.transfer-create-card, .transfer-card { background: #fff; border: 1px solid #eef0f6; border-radius: 20px; padding: 20px; box-shadow: 0 6px 20px rgba(50,50,100,.04); }
+.transfer-create-card h3, .transfers-list-header h3 { font-size: 17px; margin-bottom: 14px; }
+.transfer-mode-switch { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }.transfer-mode { border: 1px solid #dedafc; background: #faf9ff; color: #5144d8; border-radius: 10px; padding: 9px 13px; font-family: inherit; font-weight: 700; cursor: pointer; }.transfer-mode.active { background: #6557ed; color: #fff; border-color: #6557ed; }
+.transfer-form-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.transfer-form-row label { display: flex; align-items: center; gap: 7px; color: #646477; font-size: 12px; font-weight: 700; }
+.transfer-form-row select, .transfer-form-row input { min-height: 40px; border: 1px solid #e3e5ef; border-radius: 10px; background: #fff; padding: 0 12px; font-family: inherit; color: #34364b; }
+.transfer-form-row #transferProductSelect { flex: 1 1 300px; }.transfer-form-row #transferQuantity { width: 120px; }.transfer-form-row #transferNotes { flex: 1 1 200px; }
+.transfer-form-row #transferProductSearch { flex: 1 1 230px; }
+.transfer-search-results { display: grid; gap: 7px; max-height: 280px; overflow-y: auto; margin: -3px 0 12px; }.transfer-search-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; border: 1px solid #eceaf9; background: #fff; border-radius: 12px; padding: 11px 13px; text-align: right; font-family: inherit; cursor: pointer; }.transfer-search-result:hover, .transfer-search-result.active { border-color: #6557ed; background: #f7f6ff; }.transfer-search-result strong, .transfer-search-result small { display: block; }.transfer-search-result strong { font-size: 12px; }.transfer-search-result small { color: #858796; font-size: 10px; margin-top: 3px; }.transfer-search-result .transfer-search-stock { color: #6557ed; font-weight: 800; white-space: nowrap; font-size: 11px; }.transfer-selected-product { min-height: 48px; margin: 0 0 12px; padding: 12px; border-radius: 13px; background: #f8f9fd; color: #858796; font-size: 11px; }.transfer-selected-product.has-product { border: 1px solid #dedafc; background: #faf9ff; color: #37374c; }.transfer-selected-product strong { display: block; font-size: 13px; margin-bottom: 5px; }.transfer-selected-product span { margin-left: 12px; }.transfer-selected-product .stock { color: #6557ed; font-weight: 800; }
+.transfer-form-row button, .transfer-create-actions button, .transfers-list-header button, .transfer-action { min-height: 40px; border: 0; border-radius: 10px; padding: 0 14px; background: #6557ed; color: #fff; font-family: inherit; font-weight: 700; cursor: pointer; }
+.transfer-draft-items { display: grid; gap: 8px; padding: 12px; background: #f8f9fd; border-radius: 13px; min-height: 48px; }.transfer-draft-items > span { color: #858796; font-size: 12px; }
+.transfer-draft-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }.transfer-draft-item button { border: 0; background: none; color: #e05265; font-family: inherit; cursor: pointer; }
+.transfer-create-actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }.transfer-create-actions span { color: #74788b; font-size: 11px; }
+.transfers-list-header { display: flex; justify-content: space-between; align-items: center; margin: 24px 0 12px; }.transfers-list-header h3 { margin: 0; }.transfers-list-header button { background: #eeecff; color: #5144d8; }
+.transfers-list { display: grid; gap: 12px; }.transfer-card-top, .transfer-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }.transfer-card-top h4 { font-size: 15px; }.transfer-card-meta { color: #858796; font-size: 11px; margin-top: 4px; }.transfer-status { padding: 6px 10px; border-radius: 9px; font-size: 11px; font-weight: 800; background: #eeeaff; color: #5144d8; }.transfer-status.in_transit { background: #fff2dc; color: #b26b13; }.transfer-status.received { background: #e5f8ef; color: #258356; }.transfer-status.cancelled { background: #fff0f2; color: #c14359; }.transfer-items-summary { margin: 15px 0; padding: 10px; background: #f8f9fd; border-radius: 12px; font-size: 12px; color: #55576a; }.transfer-card-bottom { border-top: 1px solid #eef0f6; padding-top: 12px; }.transfer-actions { display: flex; gap: 7px; flex-wrap: wrap; }.transfer-action.receive { background: #2e9d69; }.transfer-action.cancel { background: #fff0f2; color: #c14359; }
+.transfer-action.print { background: #eeecff; color: #5144d8; }.transfer-direction { font-size: 11px; font-weight: 800; color: #5d5f73; padding: 5px 9px; background: #f5f4ff; border-radius: 8px; }
+.transfer-invoice-items { display: grid; gap: 10px; margin: 16px 0; }.transfer-invoice-item { display: flex; align-items: center; gap: 13px; padding: 12px; border-radius: 16px; background: #f8f9fd; }.transfer-invoice-image { width: 62px; height: 62px; border-radius: 13px; background: #eeecff; flex: 0 0 62px; overflow: hidden; display: grid; place-items: center; color: #6557ed; font-size: 22px; }.transfer-invoice-image img { width: 100%; height: 100%; object-fit: cover; }.transfer-invoice-info { flex: 1; min-width: 0; }.transfer-invoice-info strong { display: block; font-size: 13px; }.transfer-invoice-info small { display: block; color: #858796; margin-top: 3px; font-size: 10px; }.transfer-invoice-quantity { color: #6557ed !important; font-weight: 800; }.transfer-invoice-price { font-weight: 800; font-size: 12px; white-space: nowrap; }.transfer-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-top: 1px solid #eef0f6; font-size: 14px; font-weight: 800; }.transfer-total strong { color: #6557ed; font-size: 17px; }
+@media (max-width: 600px) { .transfer-form-row > * { width: 100% !important; }.transfer-arrow { text-align: center; }.transfer-create-actions { align-items: flex-start; flex-direction: column; } }
+
+.transfer-variant-modal { position: fixed; inset: 0; z-index: 10020; display: grid; place-items: center; padding: 20px; background: rgba(18, 18, 35, .55); }
+.transfer-variant-dialog { position: relative; width: min(470px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 30px; border-radius: 24px; background: #fff; text-align: right; box-shadow: 0 20px 65px rgba(0,0,0,.22); }
+.transfer-variant-dialog .login-icon { margin-bottom: 12px; }.transfer-variant-dialog h2 { font-size: 21px; margin-bottom: 5px; }.transfer-variant-code { color: #6557ed; font-size: 12px; font-weight: 800; }.transfer-variant-name { color: #858796; font-size: 12px; margin-bottom: 18px; }
+.transfer-variant-dialog .form-group { margin-bottom: 14px; }.transfer-variant-dialog select { width: 100%; min-height: 48px; border: 1px solid #dedafc; border-radius: 12px; padding: 0 12px; background: #fff; color: #34364b; font-family: inherit; }
+.transfer-variant-stock { padding: 12px; border-radius: 12px; background: #f8f9fd; color: #6557ed; font-size: 12px; font-weight: 800; margin-bottom: 14px; }.transfer-variant-confirm { width: 100%; min-height: 46px; border: 0; border-radius: 12px; background: #6557ed; color: #fff; font-family: inherit; font-weight: 800; cursor: pointer; }
+.transfer-variant-close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f2f2f7; font-size: 24px; line-height: 1; cursor: pointer; }
 
 .admin-order-card {
     background: white;
