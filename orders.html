@@ -1300,43 +1300,21 @@ if (!customerName) {
         // تقديم الطلب
         // =========================
 
-       const {
-    error: updateError
-} = await supabaseClient
-    .from("orders")
-    .update({
-
-        status: "مقدم",
-
-        driver_number:
-            driver.driver_number,
-
-        driver_name:
-            driver.name,
-
-        warehouse:
-            customerWarehouse,
-
-        customer_name:
-            customerName,
-
-        customer_location:
-    (
-        customerLat !== null &&
-        customerLng !== null
-    )
-        ? `${customerLat},${customerLng}`
-        : null,
-
-customer_lat:
-    customerLat,
-
-customer_lng:
-    customerLng
-
-    })
-    .eq("id", order.id)
-    .eq("user_id", user.id);
+        // ينفذ تقديم الطلب وخصم كميات مخزون المنطقة في عملية واحدة آمنة.
+        const {
+            error: updateError
+        } = await supabaseClient.rpc("submit_customer_order", {
+            p_order_id: order.id,
+            p_driver_number: driver.driver_number,
+            p_driver_name: driver.name,
+            p_customer_name: customerName,
+            p_customer_location: (
+                customerLat !== null && customerLng !== null
+            ) ? `${customerLat},${customerLng}` : null,
+            p_customer_lat: customerLat,
+            p_customer_lng: customerLng,
+            p_warehouse: customerWarehouse
+        });
 
 
 
