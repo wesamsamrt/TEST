@@ -6,6 +6,30 @@ const loginButton = document.getElementById("loginButton");
 const loginMessage = document.getElementById("loginMessage");
 
 const logoutButton = document.getElementById("logoutButton");
+const warehouseLoginPage = document.getElementById("warehouseLoginPage");
+const warehouseChoiceButtons = document.querySelectorAll("[data-warehouse-choice]");
+let selectedWarehouse = null;
+
+function showWarehouseSelection() {
+    loginPage.style.display = "none";
+    adminPage.style.display = "none";
+    warehouseLoginPage.style.display = "flex";
+}
+
+function updateWarehouseLabel() {
+    const label = document.getElementById("selectedWarehouseLabel");
+    if (label) label.textContent = selectedWarehouse ? `مخزن ${selectedWarehouse}` : "—";
+    const dashboardName = document.getElementById("dashboardWarehouseName");
+    if (dashboardName) dashboardName.textContent = selectedWarehouse ? `مخزن ${selectedWarehouse}` : "وسام سمارت";
+}
+
+function selectWarehouse(warehouse) {
+    selectedWarehouse = warehouse;
+    warehouseOptions?.forEach(option =>
+        option.classList.toggle("active", option.dataset.warehouse === warehouse)
+    );
+    updateWarehouseLabel();
+}
 
 
 /* =========================
@@ -16,15 +40,23 @@ function showAdmin() {
     const loginPage = document.getElementById("loginPage");
     const adminPage = document.getElementById("adminPage");
 
+    if (!selectedWarehouse) {
+        showWarehouseSelection();
+        return;
+    }
+
     if (loginPage) {
         loginPage.style.display = "none";
     }
+
+    warehouseLoginPage.style.display = "none";
 
     if (adminPage) {
         adminPage.style.display = "block";
     }
     // تبقى لوحة التحكم الأساسية مستقلة عن أي إضافات إحصائية.
     // بهذا لا يمنع خطأ في تقرير أو تنبيه بقية عناصر الإدارة من العمل.
+    updateWarehouseLabel();
     loadDashboardLatestOrders();
     setTimeout(() => loadDashboardData(), 0);
 
@@ -48,6 +80,10 @@ function showLogin() {
 
     if (adminPage) {
         adminPage.style.display = "none";
+    }
+
+    if (warehouseLoginPage) {
+        warehouseLoginPage.style.display = "none";
     }
 
 }
@@ -257,6 +293,8 @@ async function logout() {
 
     showLogin();
 
+    selectedWarehouse = null;
+
     adminCode.value = "";
 
 }
@@ -298,6 +336,21 @@ logoutButton.addEventListener(
     "click",
     logout
 );
+
+warehouseChoiceButtons.forEach(button => {
+    button.addEventListener("click", () => {
+        selectWarehouse(button.dataset.warehouseChoice);
+        showAdmin();
+    });
+});
+
+document.getElementById("changeWarehouseButton")?.addEventListener("click", () => {
+    document.getElementById("productsAdmin").style.display = "none";
+    document.getElementById("ordersAdmin").style.display = "none";
+    showWarehouseSelection();
+});
+
+document.getElementById("warehouseBackToLogin")?.addEventListener("click", logout);
 
 
 /* =========================
@@ -396,8 +449,8 @@ async function loadDashboardData() {
 
     try {
         const [{ data: orders, error: ordersError }, { data: products, error: productsError }] = await Promise.all([
-            supabaseClient.from("orders").select("id, status, total, created_at, user_id").order("id", { ascending: false }),
-            supabaseClient.from("products").select("id, product_code, company, model, quantity, image")
+            supabaseClient.from("orders").select("id, status, total, created_at, user_id").eq("warehouse", selectedWarehouse).order("id", { ascending: false }),
+            supabaseClient.from("products").select("id, product_code, company, model, quantity, image").eq("warehouse", selectedWarehouse)
         ]);
 
         if (ordersError) throw ordersError;
@@ -528,7 +581,6 @@ const adminProductSearch =
 
 let adminProductsData = [];
 let selectedProductImage = null;
-let selectedWarehouse = "الرياض";
 
 const warehouseOptions = document.querySelectorAll(".warehouse-option");
 
@@ -544,13 +596,14 @@ function renderSelectedWarehouseProducts() {
 
 warehouseOptions.forEach(button => {
     button.addEventListener("click", () => {
-        selectedWarehouse = button.dataset.warehouse;
-        warehouseOptions.forEach(option =>
-            option.classList.toggle("active", option === button)
-        );
+        selectWarehouse(button.dataset.warehouse);
         adminProductSearch.value = "";
         adminProductSearch.placeholder = `ابحث في منتجات مخزن ${selectedWarehouse}...`;
-        renderSelectedWarehouseProducts();
+        if (productsAdmin.style.display !== "none") {
+            loadAdminProducts();
+        }
+        loadDashboardData();
+        loadDashboardLatestOrders();
     });
 });
 
@@ -609,6 +662,7 @@ async function loadAdminProducts() {
             } = await supabaseClient
                 .from("products")
                 .select("*")
+                .eq("warehouse", selectedWarehouse)
                 .order("id", {
                     ascending: false
                 })
@@ -2626,8 +2680,10 @@ async function loadAdminOrders() {
     created_at,
     user_id,
     driver_name,
-    driver_number
+    driver_number,
+    warehouse
 `)
+    .eq("warehouse", selectedWarehouse)
     .order("id", {
         ascending: false
     });
@@ -2760,6 +2816,7 @@ async function loadDashboardLatestOrders() {
                 total,
                 created_at
             `)
+            .eq("warehouse", selectedWarehouse)
             .order("id", {
                 ascending: false
             })
@@ -3144,6 +3201,15 @@ Object.entries(typeCodes).forEach(
 
             </select>
 
+            <select
+                class="order-status-select"
+                aria-label="نقل الطلب إلى مخزن آخر"
+                onchange="moveOrderToWarehouse(${order.id}, this.value)"
+            >
+                <option value="الرياض" ${order.warehouse === "الرياض" ? "selected" : ""}>مخزن الرياض</option>
+                <option value="جدة" ${order.warehouse === "جدة" ? "selected" : ""}>مخزن جدة</option>
+            </select>
+
         </div>
 
 
@@ -3315,6 +3381,26 @@ async function updateOrderStatus(orderId, newStatus) {
 
     }
 
+}
+
+async function moveOrderToWarehouse(orderId, warehouse) {
+    if (warehouse === selectedWarehouse) return;
+
+    const { error } = await supabaseClient
+        .from("orders")
+        .update({ warehouse })
+        .eq("id", orderId);
+
+    if (error) {
+        console.error("Move order warehouse error:", error);
+        alert("تعذر نقل الطلب إلى المخزن المحدد: " + error.message);
+        await loadAdminOrders();
+        return;
+    }
+
+    await loadAdminOrders();
+    loadDashboardData();
+    loadDashboardLatestOrders();
 }
 
 
