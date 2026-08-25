@@ -849,6 +849,11 @@ body {
 .orders-filters input:focus, .orders-filters select:focus { outline: 0; border-color: #6557ed; box-shadow: 0 0 0 3px rgba(101, 87, 237, .1); }
 .refresh-orders-button { border: 0; background: #6557ed; color: #fff; cursor: pointer; font-weight: 700; }
 .refresh-orders-button:hover { background: #5245d1; }
+.driver-warehouse-assignment { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; padding-top: 12px; border-top: 1px solid #eef0f6; }
+.driver-warehouse-assignment input, .driver-warehouse-assignment select, .driver-warehouse-assignment button { min-height: 38px; border: 1px solid #e3e5ef; border-radius: 10px; padding: 0 12px; font-family: inherit; }
+.driver-warehouse-assignment input { width: 180px; }
+.driver-warehouse-assignment button { border: 0; background: #eeecff; color: #5144d8; cursor: pointer; font-weight: 700; }
+.driver-warehouse-assignment span { color: #74788b; font-size: 11px; }
 
 .admin-orders {
     display: grid;

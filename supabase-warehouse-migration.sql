@@ -46,3 +46,26 @@ check (warehouse in ('الرياض', 'جدة'));
 
 create index if not exists orders_warehouse_idx
 on public.orders (warehouse);
+
+alter table public.drivers
+add column if not exists warehouse text;
+
+update public.drivers
+set warehouse = 'الرياض'
+where warehouse is null or btrim(warehouse) = '';
+
+alter table public.drivers
+alter column warehouse set default 'الرياض';
+
+alter table public.drivers
+alter column warehouse set not null;
+
+alter table public.drivers
+drop constraint if exists drivers_warehouse_check;
+
+alter table public.drivers
+add constraint drivers_warehouse_check
+check (warehouse in ('الرياض', 'جدة'));
+
+create index if not exists drivers_warehouse_idx
+on public.drivers (warehouse);

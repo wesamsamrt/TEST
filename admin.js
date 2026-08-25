@@ -2575,7 +2575,48 @@ const adminOrderSearch = document.getElementById("adminOrderSearch");
 const adminOrderStatusFilter = document.getElementById("adminOrderStatusFilter");
 const refreshAdminOrders = document.getElementById("refreshAdminOrders");
 const ordersSummary = document.getElementById("ordersSummary");
+const driverWarehouseNumber = document.getElementById("driverWarehouseNumber");
+const driverWarehouseSelect = document.getElementById("driverWarehouseSelect");
+const driverWarehouseMessage = document.getElementById("driverWarehouseMessage");
 let adminOrdersData = [];
+
+async function assignDriverWarehouse() {
+    const driverNumber = driverWarehouseNumber?.value.trim();
+    const warehouse = driverWarehouseSelect?.value;
+
+    if (!driverNumber || !warehouse) {
+        driverWarehouseMessage.textContent = "أدخل رقم المندوب واختر المخزن.";
+        return;
+    }
+
+    driverWarehouseMessage.textContent = "جاري الربط...";
+    const { data: driver, error: driverError } = await supabaseClient
+        .from("drivers")
+        .update({ warehouse })
+        .eq("driver_number", driverNumber)
+        .select("id, name, driver_number, warehouse")
+        .maybeSingle();
+
+    if (driverError || !driver) {
+        driverWarehouseMessage.textContent = driverError ? `تعذر الحفظ: ${driverError.message}` : "رقم المندوب غير موجود.";
+        return;
+    }
+
+    const { error: ordersError } = await supabaseClient
+        .from("orders")
+        .update({ warehouse })
+        .eq("driver_number", driverNumber);
+
+    if (ordersError) {
+        driverWarehouseMessage.textContent = `تم ربط المندوب، لكن تعذر نقل طلباته: ${ordersError.message}`;
+        return;
+    }
+
+    driverWarehouseMessage.textContent = `تم ربط ${driver.name} بمخزن ${warehouse} ونقل طلباته الحالية.`;
+    loadAdminOrders();
+    loadDashboardData();
+    loadDashboardLatestOrders();
+}
 
 function renderAdminOrdersList() {
     const search = (adminOrderSearch?.value || "").trim().toLowerCase();
@@ -2607,6 +2648,7 @@ function updateOrdersSummary() {
 adminOrderSearch?.addEventListener("input", renderAdminOrdersList);
 adminOrderStatusFilter?.addEventListener("change", renderAdminOrdersList);
 refreshAdminOrders?.addEventListener("click", loadAdminOrders);
+document.getElementById("saveDriverWarehouseButton")?.addEventListener("click", assignDriverWarehouse);
 
 /* =========================================================
    فتح صفحة الطلبات
@@ -4648,6 +4690,16 @@ async function saveOrderEdit() {
                 "editOrderDriverNumber"
             ).value.trim();
 
+        let driverWarehouse = selectedWarehouse;
+        if (driverNumber) {
+            const { data: driver } = await supabaseClient
+                .from("drivers")
+                .select("warehouse")
+                .eq("driver_number", driverNumber)
+                .maybeSingle();
+            driverWarehouse = driver?.warehouse || selectedWarehouse;
+        }
+
 
         /* =========================
            حساب الإجمالي
@@ -4678,6 +4730,9 @@ async function saveOrderEdit() {
 
                 driver_number:
                     driverNumber,
+
+                warehouse:
+                    driverWarehouse,
 
                 total:
                     total
