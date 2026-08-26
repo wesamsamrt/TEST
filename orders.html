@@ -1328,9 +1328,15 @@ if (!customerName) {
 
             console.error(updateError);
 
+            const isMissingSubmitFunction =
+                updateError.code === "PGRST202" ||
+                updateError.code === "42883" ||
+                /submit_customer_order|Could not find the function/i.test(updateError.message || "");
+
             alert(
-                "حدث خطأ أثناء تقديم الطلب:\n" +
-                updateError.message
+                isMissingSubmitFunction
+                    ? "يلزم تفعيل إجراء تقديم الطلب في قاعدة البيانات. شغّل ملف fix-submit-order-inventory.sql من Supabase SQL Editor ثم أعد المحاولة."
+                    : "حدث خطأ أثناء تقديم الطلب:\n" + updateError.message
             );
 
             return;
