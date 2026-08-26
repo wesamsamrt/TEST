@@ -2,6 +2,7 @@ const loginPage = document.getElementById("loginPage");
 const adminPage = document.getElementById("adminPage");
 
 const adminCode = document.getElementById("adminCode");
+const adminEmail = document.getElementById("adminEmail");
 const loginButton = document.getElementById("loginButton");
 const loginMessage = document.getElementById("loginMessage");
 
@@ -11,6 +12,56 @@ let selectedWarehouse = null;
 let warehouses = [];
 let warehouseOptions = [];
 let currentTeamAccess = null;
+let warehouseNotificationsChannel = null;
+
+// يسجل عامل الخدمة ويستمع فوراً لإشعارات الطلبات الخاصة بالحساب الحالي.
+async function setupWarehouseOrderNotifications() {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+
+    try {
+        await navigator.serviceWorker.register("./service-worker.js");
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session?.user?.id || warehouseNotificationsChannel) return;
+
+        warehouseNotificationsChannel = supabaseClient
+            .channel(`warehouse-order-notifications-${session.user.id}`)
+            .on("postgres_changes", {
+                event: "INSERT",
+                schema: "public",
+                table: "notifications",
+                filter: `user_id=eq.${session.user.id}`
+            }, async payload => {
+                // لا نعرض تنبيهاً نظامياً عندما تكون لوحة الإدارة أمام المستخدم بالفعل.
+                if (!document.hidden || Notification.permission !== "granted") return;
+                const notice = payload.new;
+                const registration = await navigator.serviceWorker.ready;
+                await registration.showNotification(notice.title || "طلب جديد 🔔", {
+                    body: notice.message || "لديك طلب جديد يحتاج متابعة.",
+                    tag: `warehouse-order-${notice.order_id || notice.id}`,
+                    renotify: true,
+                    data: { url: "./admin.html" }
+                });
+            })
+            .subscribe();
+    } catch (error) {
+        console.warn("تعذر تفعيل إشعارات الطلبات:", error);
+    }
+}
+
+// يطلب إذن إشعارات المتصفح من الموظف ثم يبدأ استقبال تنبيهات مخزنه.
+async function enableWarehouseOrderNotifications() {
+    if (!("Notification" in window)) {
+        alert("هذا المتصفح لا يدعم إشعارات النظام.");
+        return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+        alert("لم يتم السماح بالإشعارات. فعّلها من إعدادات المتصفح لاحقًا.");
+        return;
+    }
+    await setupWarehouseOrderNotifications();
+    alert("تم تفعيل إشعارات الطلبات لهذا المتصفح.");
+}
 
 // يطبق صلاحيات الأقسام المحفوظة على عناصر التنقل في لوحة الإدارة.
 function applyTeamAccessToInterface() {
@@ -21,6 +72,7 @@ function applyTeamAccessToInterface() {
         dashboardButton: "dashboard",
         productsButton: "products",
         ordersButton: "orders",
+        salesButton: "sales",
         transfersButton: "transfers",
         accountsButton: "accounts"
     };
@@ -28,6 +80,19 @@ function applyTeamAccessToInterface() {
         const button = document.getElementById(id);
         if (button) button.style.display = isOwner || allowedSections.includes(section) ? "" : "none";
     });
+}
+
+// يرجع أسماء المخازن المسموح للحساب الحالي برؤيتها؛ المدير العام يرى الجميع.
+function getPermittedWarehouseNames() {
+    if (currentTeamAccess?.role === "owner") return null;
+    const permitted = currentTeamAccess?.permissions?.warehouses;
+    return Array.isArray(permitted) && permitted.length ? permitted : null;
+}
+
+// يتحقق أن المخزن مطلوب العرض داخل نطاق صلاحية الحساب الحالي.
+function canAccessWarehouse(warehouseName) {
+    const permitted = getPermittedWarehouseNames();
+    return !permitted || permitted.includes(warehouseName);
 }
 
 // ينشئ خيارات HTML لقوائم اختيار المخازن ويحدد المخزن المختار عند الحاجة.
@@ -42,6 +107,12 @@ function renderWarehouseControls() {
         choices.innerHTML = warehouses.length ? warehouses.map(warehouse => `<button type="button" class="warehouse-login-option" data-warehouse-choice="${transferText(warehouse.name)}"><strong>مخزن ${transferText(warehouse.name)}</strong><span>فتح لوحة الإدارة والمخزون</span></button>`).join("") : "لا توجد مخازن بعد.";
         choices.querySelectorAll("[data-warehouse-choice]").forEach(button => button.addEventListener("click", () => { selectWarehouse(button.dataset.warehouseChoice); showAdmin(); }));
     }
+    // إنشاء المخازن متاح للمدير العام فقط حتى لا يوسّع الموظف نطاق عمله بنفسه.
+    const addWarehouseBox = document.querySelector(".add-warehouse-box");
+    const warehouseAddMessage = document.getElementById("warehouseAddMessage");
+    const canManageWarehouses = currentTeamAccess?.role === "owner";
+    if (addWarehouseBox) addWarehouseBox.style.display = canManageWarehouses ? "" : "none";
+    if (warehouseAddMessage && !canManageWarehouses) warehouseAddMessage.textContent = "";
     const productWarehouse = document.getElementById("productWarehouse");
     const driverWarehouse = document.getElementById("driverWarehouseSelect");
     const source = document.getElementById("transferSourceWarehouse");
@@ -74,7 +145,12 @@ async function loadWarehouses() {
         if (choices) choices.innerHTML = `<div class="message error">تعذر تحميل المخازن: ${transferText(error.message)}</div>`;
         return;
     }
-    warehouses = data || [];
+    // لا نضع في الواجهة إلا المخازن المحددة للحساب، أما عدم تحديد مخزن فيعني جميع المخازن.
+    warehouses = (data || []).filter(warehouse => canAccessWarehouse(warehouse.name));
+
+    if (selectedWarehouse && !canAccessWarehouse(selectedWarehouse)) {
+        selectedWarehouse = null;
+    }
     renderWarehouseControls();
 }
 
@@ -96,6 +172,10 @@ function updateWarehouseLabel() {
 
 // يحفظ المخزن المختار ويحدّث عناصر الواجهة المرتبطة به.
 function selectWarehouse(warehouse) {
+    if (!canAccessWarehouse(warehouse)) {
+        console.warn("محاولة فتح مخزن خارج صلاحيات الحساب:", warehouse);
+        return;
+    }
     selectedWarehouse = warehouse;
     warehouseOptions?.forEach(option =>
         option.classList.toggle("active", option.dataset.warehouse === warehouse)
@@ -129,6 +209,8 @@ function showAdmin() {
     if (transfersPage) transfersPage.style.display = "none";
     const accountsPage = document.getElementById("accountsAdmin");
     if (accountsPage) accountsPage.style.display = "none";
+    const salesPage = document.getElementById("salesAdmin");
+    if (salesPage) salesPage.style.display = "none";
 
     if (adminPage) {
         adminPage.style.display = "block";
@@ -137,6 +219,7 @@ function showAdmin() {
     // بهذا لا يمنع خطأ في تقرير أو تنبيه بقية عناصر الإدارة من العمل.
     updateWarehouseLabel();
     applyTeamAccessToInterface();
+    setupWarehouseOrderNotifications();
     loadDashboardLatestOrders();
     setTimeout(() => loadDashboardData(), 0);
 
@@ -174,7 +257,7 @@ function showLogin() {
    التحقق هل المستخدم أدمن
 ========================= */
 
-// يتحقق من أن المستخدم الحالي موجود ضمن جدول مديري النظام.
+// يتحقق من أن المستخدم الحالي لديه حساب إدارة نشط وصلاحيات مفعّلة.
 async function isAdmin() {
 
     const {
@@ -216,13 +299,15 @@ async function isAdmin() {
     if (!data) return false;
 
     const { data: access, error: accessError } = await supabaseClient.rpc("get_my_team_access");
-    if (!accessError && access) {
-        currentTeamAccess = access;
-        return !!access.is_active;
+
+    if (accessError || !access) {
+        console.error("Team access check error:", accessError);
+        currentTeamAccess = null;
+        return false;
     }
 
-    // توافق مؤقت مع النسخ القديمة قبل تشغيل ملف تحديث الصلاحيات في Supabase.
-    return true;
+    currentTeamAccess = access;
+    return !!access.is_active;
 
 }
 
@@ -234,14 +319,13 @@ async function isAdmin() {
 // يسجّل دخول المدير بكلمة المرور ثم ينقله إلى اختيار المخزن.
 async function login() {
 
-    const password =
-        adminCode.value.trim();
+    const password = adminCode.value.trim();
+    const email = adminEmail.value.trim().toLowerCase();
 
-
-    if (!password) {
+    if (!email || !password) {
 
         loginMessage.textContent =
-            "اكتب كلمة المرور";
+            "اكتب البريد الإلكتروني وكلمة المرور";
 
         loginMessage.style.color =
             "#e05265";
@@ -255,10 +339,6 @@ async function login() {
 
     loginButton.textContent =
         "جاري التحقق...";
-
-
-    const email =
-        "procurement@wesamsa.com";
 
 
     try {
@@ -384,11 +464,17 @@ async function logout() {
 
     await supabaseClient.auth.signOut();
 
+    if (warehouseNotificationsChannel) {
+        await supabaseClient.removeChannel(warehouseNotificationsChannel);
+        warehouseNotificationsChannel = null;
+    }
+
     showLogin();
 
     selectedWarehouse = null;
     currentTeamAccess = null;
 
+    adminEmail.value = "";
     adminCode.value = "";
 
 }
@@ -430,6 +516,13 @@ logoutButton.addEventListener(
     "click",
     logout
 );
+
+document.getElementById("enableWarehouseNotifications")?.addEventListener("click", enableWarehouseOrderNotifications);
+
+// يتيح تسجيل الدخول من حقل البريد عند الضغط على Enter.
+adminEmail?.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") login();
+});
 
 document.getElementById("addWarehouseButton")?.addEventListener("click", async () => {
     const nameInput = document.getElementById("newWarehouseName");
@@ -519,7 +612,7 @@ async function loadTransferSourceProducts() {
     const [{ data, error }, { data: destinationProducts, error: destinationError }] = await Promise.all([
         supabaseClient
         .from("products")
-        .select("id, product_code, company, model, color, type, product_type, quantity, inventory_key")
+        .select("id, product_code, company, model, color, type, product_type, storage_location, quantity, inventory_key")
         .eq("warehouse", transferSourceWarehouse.value)
         .gt("quantity", 0)
         .order("model"),
@@ -863,7 +956,11 @@ async function loadAccounts() {
     if (!accountsList) return;
     accountsList.innerHTML = '<div class="message">جاري تحميل الحسابات...</div>';
     const { data, error } = await supabaseClient.rpc("list_team_accounts");
-    if (error) { accountsList.innerHTML = `<div class="message error">تعذر تحميل الحسابات: ${transferText(error.message)}</div>`; return; }
+    if (error) {
+        console.error("List team accounts error:", error);
+        accountsList.innerHTML = `<div class="message error">تعذر تحميل الحسابات: ${transferText(error.message)}<br><small>إذا ظهر خطأ 400، شغّل ملف fix-accounts-permissions.sql في Supabase SQL Editor.</small></div>`;
+        return;
+    }
     const accounts = data || [];
     if (accountsSummary) {
         const active = accounts.filter(account => account.is_active).length;
@@ -873,7 +970,7 @@ async function loadAccounts() {
     accountsList.innerHTML = accounts.map(account => {
         const permissions = account.permissions || {};
         const warehousesLabel = (permissions.warehouses || []).length ? permissions.warehouses.join("، ") : "جميع المخازن";
-        const sectionsLabel = (permissions.sections || []).map(section => ({ dashboard: "الرئيسية", products: "المنتجات", orders: "الطلبات", transfers: "التحويلات", accounts: "الحسابات" })[section] || section).join("، ") || "كل الأقسام";
+        const sectionsLabel = (permissions.sections || []).map(section => ({ dashboard: "الرئيسية", products: "المنتجات", orders: "الطلبات", sales: "المبيعات", transfers: "التحويلات", accounts: "الحسابات" })[section] || section).join("، ") || "كل الأقسام";
         return `<article class="account-card"><div class="account-card-top"><div><h4>${transferText(account.email)}</h4><p>تمت الإضافة: ${new Date(account.created_at).toLocaleString("ar-SA")}</p></div><span class="account-role ${account.is_active ? "" : "inactive"}">${account.is_active ? accountRoleLabel(account.role) : "موقوف"}</span></div><div class="account-card-bottom"><span class="account-access">المخازن: ${transferText(warehousesLabel)}<br>الأقسام: ${transferText(sectionsLabel)}</span><div>${account.is_active ? `<button class="account-action disable" onclick="toggleTeamAccount('${account.user_id}', false)">إيقاف الصلاحية</button>` : `<button class="account-action enable" onclick="toggleTeamAccount('${account.user_id}', true)">تفعيل الصلاحية</button>`}</div></div></article>`;
     }).join("");
 }
@@ -930,13 +1027,6 @@ document.getElementById("refreshAccountsButton")?.addEventListener("click", () =
    التحقق عند فتح الصفحة
 ========================= */
 /* =========================
-   حساب الإدارة المسموح
-========================= */
-
-const ADMIN_EMAIL = "zzzzxxccvvbbnnmm12345a@wesamsa.com";
-
-
-/* =========================
    التحقق من حساب الإدارة
 ========================= */
 
@@ -961,49 +1051,16 @@ async function checkSession() {
     }
 
 
-    /* إيميل المستخدم */
+    // لا يسمح بالدخول إلا للحسابات النشطة التي أضافها المالك في قسم الحسابات والصلاحيات.
+    const admin = await isAdmin();
 
-    const userEmail =
-        (session.user.email || "")
-            .trim()
-            .toLowerCase();
-
-
-    /* =========================
-       التحقق من أنه الأدمن
-    ========================= */
-
-    if (userEmail !== ADMIN_EMAIL.toLowerCase()) {
-
-        console.log(
-            "محاولة دخول غير مصرح بها:",
-            userEmail
-        );
-
-
-        /* تسجيل خروج الحساب */
-
+    if (!admin) {
         await supabaseClient.auth.signOut();
-
-
         showLogin();
-
-
-        loginMessage.textContent =
-            "هذا الحساب ليس لديه صلاحية دخول لوحة الإدارة";
-
-        loginMessage.style.color =
-            "#e05265";
-
-
+        loginMessage.textContent = "هذا الحساب ليس لديه صلاحية دخول لوحة الإدارة";
+        loginMessage.style.color = "#e05265";
         return;
-
     }
-
-
-    /* =========================
-       الحساب صحيح
-    ========================= */
 
     showAdmin();
 
@@ -1023,15 +1080,16 @@ async function loadDashboardData() {
     const alerts = document.getElementById("dashboardOperationalAlerts");
 
     try {
-        const [{ data: orders, error: ordersError }, { data: products, error: productsError }] = await Promise.all([
-            supabaseClient.from("orders").select("id, status, total, created_at, user_id").eq("warehouse", selectedWarehouse).order("id", { ascending: false }),
+        const [{ data: ordersResult, error: ordersError }, { data: products, error: productsError }] = await Promise.all([
+            supabaseClient.rpc("list_warehouse_orders", { p_warehouse: selectedWarehouse }),
             supabaseClient.from("products").select("id, product_code, company, model, quantity, image").eq("warehouse", selectedWarehouse)
         ]);
 
         if (ordersError) throw ordersError;
-        if (productsError) throw productsError;
+        if (productsError) console.warn("Dashboard products error:", productsError);
 
-        const safeOrders = orders || [];
+        // تأتي الطلبات عبر دالة تتحقق من صلاحية الحساب والمخزن حتى تظهر الإحصاءات للحسابات المقيّدة.
+        const safeOrders = Array.isArray(ordersResult) ? ordersResult : [];
         dashboardOrdersCache = safeOrders;
         const safeProducts = products || [];
         const nonCancelled = safeOrders.filter(order => order.status !== "ملغي");
@@ -1048,11 +1106,11 @@ async function loadDashboardData() {
         document.getElementById("dashboardSalesSummary").textContent = formatAdminCurrency(monthSales);
 
         const lowStock = safeProducts.filter(product => Number(product.quantity || 0) <= 5);
-        const newOrders = safeOrders.filter(order => (order.status || "جديد") === "جديد");
+        const followUpOrders = safeOrders.filter(order => !["تم استلام طلبك", "ملغي"].includes(order.status || "جديد"));
         if (alerts) {
             alerts.innerHTML = `
                 <button type="button" class="dashboard-alert new-orders-alert" id="dashboardNewOrdersAlert">
-                    <strong>${newOrders.length}</strong><span>طلبات جديدة تحتاج متابعة</span>
+                    <strong>${followUpOrders.length}</strong><span>طلبات تحتاج متابعة</span>
                 </button>
                 <button type="button" class="dashboard-alert stock-alert" id="dashboardLowStockAlert">
                     <strong>${lowStock.length}</strong><span>منتجات مخزونها 5 أو أقل</span>
@@ -1060,7 +1118,7 @@ async function loadDashboardData() {
             `;
             document.getElementById("dashboardNewOrdersAlert")?.addEventListener("click", () => {
                 ordersButton.click();
-                setTimeout(() => { if (adminOrderStatusFilter) adminOrderStatusFilter.value = "جديد"; renderAdminOrdersList(); }, 0);
+                setTimeout(() => { if (adminOrderStatusFilter) adminOrderStatusFilter.value = ""; renderAdminOrdersList(); }, 0);
             });
             document.getElementById("dashboardLowStockAlert")?.addEventListener("click", () => openLowStockInventory());
         }
@@ -1083,11 +1141,10 @@ async function loadDashboardBestProducts(orders) {
         return;
     }
 
-    const { data: items, error } = await supabaseClient
-        .from("order_items")
-        .select("product_code, company, model, quantity, image")
-        .in("order_id", orderIds);
-    if (error) throw error;
+    // عناصر الطلبات تعود مع الطلب من الدالة المصرح بها، فلا يتعطل التقرير بسبب RLS.
+    const items = orders
+        .filter(order => order.status !== "ملغي")
+        .flatMap(order => Array.isArray(order.items) ? order.items : []);
 
     const totals = new Map();
     (items || []).forEach(item => {
@@ -1130,6 +1187,124 @@ function exportSalesReport() {
 
 document.getElementById("dashboardMonthLabel")?.addEventListener("click", loadDashboardData);
 document.getElementById("dashboardBestProductsButton")?.addEventListener("click", exportSalesReport);
+
+/* =========================================================
+   قسم المبيعات
+========================================================= */
+const salesButton = document.getElementById("salesButton");
+const salesAdmin = document.getElementById("salesAdmin");
+const salesDateFrom = document.getElementById("salesDateFrom");
+const salesDateTo = document.getElementById("salesDateTo");
+const salesDriverFilter = document.getElementById("salesDriverFilter");
+let salesOrdersCache = [];
+
+// يحدد أول يوم من الشهر وتاريخه الحالي كفترة مبدئية لتقرير المبيعات.
+function setDefaultSalesDates() {
+    if (!salesDateFrom?.value) {
+        const now = new Date();
+        salesDateFrom.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    }
+    if (!salesDateTo?.value) salesDateTo.value = new Date().toISOString().slice(0, 10);
+}
+
+// يجلب ويعرض تقرير المبيعات للمخزن الحالي ضمن التاريخ والمندوب المختارين.
+async function loadSalesReport() {
+    if (!salesAdmin || !selectedWarehouse) return;
+    setDefaultSalesDates();
+    document.getElementById("salesWarehouseName").textContent = selectedWarehouse;
+    const metrics = document.getElementById("salesMetrics");
+    metrics.innerHTML = "جاري تحميل تقرير المبيعات...";
+
+    const { data, error } = await supabaseClient.rpc("list_warehouse_orders", { p_warehouse: selectedWarehouse });
+    if (error) {
+        metrics.innerHTML = `<div class="message error">تعذر تحميل المبيعات: ${transferText(error.message)}</div>`;
+        return;
+    }
+
+    const from = salesDateFrom.value ? new Date(`${salesDateFrom.value}T00:00:00`) : null;
+    const to = salesDateTo.value ? new Date(`${salesDateTo.value}T23:59:59.999`) : null;
+    const allSales = (Array.isArray(data) ? data : []).filter(order => !["جديد", "ملغي"].includes(order.status || "جديد"));
+    const drivers = [...new Set(allSales.map(order => order.driver_name || order.driver_number).filter(Boolean))].sort();
+    const selectedDriver = salesDriverFilter.value;
+    salesDriverFilter.innerHTML = `<option value="">كل المناديب</option>${drivers.map(driver => `<option value="${transferText(driver)}" ${driver === selectedDriver ? "selected" : ""}>${transferText(driver)}</option>`).join("")}`;
+
+    salesOrdersCache = allSales.filter(order => {
+        const date = new Date(order.created_at);
+        const driver = order.driver_name || order.driver_number || "";
+        return (!from || date >= from) && (!to || date <= to) && (!salesDriverFilter.value || driver === salesDriverFilter.value);
+    });
+
+    const revenue = salesOrdersCache.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    const average = salesOrdersCache.length ? revenue / salesOrdersCache.length : 0;
+    const delivered = salesOrdersCache.filter(order => order.status === "تم استلام طلبك").length;
+    metrics.innerHTML = `
+        <div class="sales-metric"><span>إجمالي المبيعات</span><strong>${formatAdminCurrency(revenue)}</strong></div>
+        <div class="sales-metric"><span>الطلبات المباعة</span><strong>${salesOrdersCache.length}</strong></div>
+        <div class="sales-metric"><span>متوسط الطلب</span><strong>${formatAdminCurrency(average)}</strong></div>
+        <div class="sales-metric"><span>طلبات مكتملة</span><strong>${delivered}</strong></div>`;
+
+    const productTotals = new Map();
+    const driverTotals = new Map();
+    salesOrdersCache.forEach(order => {
+        const driver = order.driver_name || order.driver_number || "بدون مندوب";
+        const driverStat = driverTotals.get(driver) || { orders: 0, revenue: 0 };
+        driverStat.orders += 1;
+        driverStat.revenue += Number(order.total || 0);
+        driverTotals.set(driver, driverStat);
+        (order.items || []).forEach(item => {
+            const key = item.product_code || `${item.company || ""} ${item.model || ""}`.trim() || "منتج بدون كود";
+            const stat = productTotals.get(key) || { quantity: 0, revenue: 0 };
+            stat.quantity += Number(item.quantity || 0);
+            stat.revenue += Number(item.quantity || 0) * Number(item.price || 0);
+            productTotals.set(key, stat);
+        });
+    });
+
+    const renderRows = (entries, formatter, empty) => entries.length ? entries.map(formatter).join("") : `<div class="dashboard-empty">${empty}</div>`;
+    document.getElementById("salesBestProducts").innerHTML = renderRows(
+        [...productTotals.entries()].sort((a, b) => b[1].quantity - a[1].quantity).slice(0, 8),
+        ([name, stat]) => `<div class="sales-report-row"><span>${transferText(name)}<br><small>${stat.quantity} قطعة</small></span><strong>${formatAdminCurrency(stat.revenue)}</strong></div>`,
+        "لا توجد مبيعات ضمن الفترة المحددة."
+    );
+    document.getElementById("salesDrivers").innerHTML = renderRows(
+        [...driverTotals.entries()].sort((a, b) => b[1].revenue - a[1].revenue),
+        ([name, stat]) => `<div class="sales-report-row"><span>${transferText(name)}<br><small>${stat.orders} طلبات</small></span><strong>${formatAdminCurrency(stat.revenue)}</strong></div>`,
+        "لا توجد مبيعات مرتبطة بمناديب."
+    );
+    document.getElementById("salesRecentOrders").innerHTML = renderRows(
+        [...salesOrdersCache].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 12),
+        order => `<div class="sales-report-row"><span>طلب #${order.id} · ${transferText(order.driver_name || "بدون مندوب")}<br><small>${new Date(order.created_at).toLocaleString("ar-SA")} · ${transferText(order.status || "—")}</small></span><strong>${formatAdminCurrency(order.total)}</strong></div>`,
+        "لا توجد مبيعات ضمن الفترة المحددة."
+    );
+}
+
+// يصدر المبيعات التي تظهر في التقرير الحالي بصيغة CSV.
+function exportFilteredSalesReport() {
+    if (!salesOrdersCache.length) { alert("لا توجد مبيعات لتصديرها ضمن الفترة المحددة."); return; }
+    const rows = [["رقم الطلب", "التاريخ", "المندوب", "الحالة", "الإجمالي"]];
+    salesOrdersCache.forEach(order => rows.push([order.id, new Date(order.created_at).toLocaleString("ar-SA"), order.driver_name || order.driver_number || "", order.status || "", Number(order.total || 0).toFixed(2)]));
+    const csv = "\uFEFF" + rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    link.download = `sales-${selectedWarehouse}-${salesDateFrom.value}-${salesDateTo.value}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+salesButton?.addEventListener("click", async () => {
+    document.getElementById("adminPage").style.display = "none";
+    document.getElementById("productsAdmin").style.display = "none";
+    document.getElementById("ordersAdmin").style.display = "none";
+    document.getElementById("categoriesAdmin").style.display = "none";
+    if (transfersAdmin) transfersAdmin.style.display = "none";
+    if (accountsAdmin) accountsAdmin.style.display = "none";
+    salesAdmin.style.display = "block";
+    await loadSalesReport();
+});
+document.getElementById("backFromSales")?.addEventListener("click", () => { salesAdmin.style.display = "none"; document.getElementById("adminPage").style.display = "block"; });
+document.getElementById("applySalesFilters")?.addEventListener("click", loadSalesReport);
+document.getElementById("exportSalesReportButton")?.addEventListener("click", exportFilteredSalesReport);
+["productsButton", "ordersButton", "categoriesButton", "dashboardButton", "transfersButton", "accountsButton"].forEach(id => document.getElementById(id)?.addEventListener("click", () => { if (salesAdmin) salesAdmin.style.display = "none"; }));
 
 
 
@@ -1350,6 +1525,10 @@ function renderAdminProducts(products) {
                     ${product.company || ""}
                 </p>
 
+                <p class="admin-product-storage-location">
+                    📍 الموقع: ${product.storage_location || "غير محدد"}
+                </p>
+
             </div>
 
 
@@ -1413,6 +1592,7 @@ adminProductSearch.addEventListener(
                      ${product.category || ""}
                  ${product.product_type || ""}
                  ${product.type || ""}
+                 ${product.storage_location || ""}
 
                 `.toLowerCase();
 
@@ -1467,6 +1647,7 @@ addProductButton.addEventListener("click", function () {
 
     productFormCard.style.display = "block";
     document.getElementById("productWarehouse").value = selectedWarehouse;
+    document.getElementById("productStorageLocation").value = "";
     document.getElementById(
     "productCompatibilityType"
 ).value = "device";
@@ -1501,6 +1682,7 @@ function clearProductForm() {
     document.getElementById("productColor").value = "";
     document.getElementById("productQuantity").value = "";
     document.getElementById("productWarehouse").value = selectedWarehouse;
+    document.getElementById("productStorageLocation").value = "";
     document.getElementById("productPrice").value = "";
 
 const compatibilitySelect =
@@ -1728,6 +1910,8 @@ async function saveNewProduct() {
 
     const warehouse = document.getElementById("productWarehouse").value;
 
+    const storageLocation = document.getElementById("productStorageLocation").value.trim();
+
     const price =
         Number(
             document.getElementById("productPrice").value
@@ -1879,6 +2063,8 @@ catch (error) {
 
     warehouse: warehouse,
 
+    storage_location: storageLocation || null,
+
     price: price || 0,
 
     compatibility_type:
@@ -1922,6 +2108,8 @@ catch (error) {
     quantity: quantity || 0,
 
     warehouse: warehouse,
+
+    storage_location: storageLocation || null,
 
     price: price || 0,
 
@@ -2043,6 +2231,9 @@ async function editProduct(id) {
 
     document.getElementById("productWarehouse").value =
         product.warehouse || selectedWarehouse;
+
+    document.getElementById("productStorageLocation").value =
+        product.storage_location || "";
 
     document.getElementById("productPrice").value =
         product.price ?? 0;
@@ -3265,30 +3456,11 @@ async function loadAdminOrders() {
     `;
 
 
-    const {
-    data: orders,
-    error
-} = await supabaseClient
-    .from("orders")
-    .select(`
-    id,
-    status,
-    customer_name,
-    customer_phone,
-    customer_lat,
-    customer_lng,
-    customer_location,
-    total,
-    created_at,
-    user_id,
-    driver_name,
-    driver_number,
-    warehouse
-`)
-    .eq("warehouse", selectedWarehouse)
-    .order("id", {
-        ascending: false
+    // نستخدم دالة مخصّصة لتفادي أن تمنع سياسة RLS الطلبات من الظهور للحساب المصرح له بالمخزن.
+    const { data: ordersResult, error } = await supabaseClient.rpc("list_warehouse_orders", {
+        p_warehouse: selectedWarehouse
     });
+    const orders = Array.isArray(ordersResult) ? ordersResult : [];
 
     if (error) {
 
@@ -3320,30 +3492,8 @@ async function loadAdminOrders() {
     }
 
 
-    // نجلب عناصر كل الطلبات بطلب واحد بدلاً من طلب منفصل لكل بطاقة.
-    const { data: allItems, error: itemsError } = await supabaseClient
-        .from("order_items")
-        .select("*")
-        .in("order_id", orders.map(order => order.id))
-        .order("id", { ascending: true });
-
-    if (itemsError) {
-        console.error(itemsError);
-        adminOrders.innerHTML = '<div class="message error">حدث خطأ أثناء تحميل منتجات الطلبات.</div>';
-        return;
-    }
-
-    const itemsByOrder = new Map();
-    (allItems || []).forEach(item => {
-        const items = itemsByOrder.get(item.order_id) || [];
-        items.push(item);
-        itemsByOrder.set(item.order_id, items);
-    });
-
-    adminOrdersData = orders.map(order => ({
-        ...order,
-        items: itemsByOrder.get(order.id) || []
-    }));
+    // الدالة تعيد عناصر كل طلب معه لتبقى بيانات الفاتورة متاحة دون طلب إضافي محجوب بالصلاحيات.
+    adminOrdersData = orders.map(order => ({ ...order, items: order.items || [] }));
     updateOrdersSummary();
     renderAdminOrdersList();
 
@@ -3853,24 +4003,8 @@ async function updateOrderStatus(orderId, newStatus) {
         // 1 - جلب الطلب
         // =========================
 
-        const {
-            data: order,
-            error: orderError
-        } = await supabaseClient
-            .from("orders")
-            .select("id, user_id, status")
-            .eq("id", orderId)
-            .single();
-
-
-        if (orderError || !order) {
-
-            console.error(orderError);
-
-            alert("لم يتم العثور على الطلب");
-
-            return;
-        }
+        const order = adminOrdersData.find(item => String(item.id) === String(orderId));
+        if (!order) { alert("لم يتم العثور على الطلب ضمن مخزن حسابك."); return; }
 
 
         // =========================
@@ -3888,14 +4022,10 @@ async function updateOrderStatus(orderId, newStatus) {
         // 3 - تحديث حالة الطلب
         // =========================
 
-        const {
-            error: updateError
-        } = await supabaseClient
-            .from("orders")
-            .update({
-                status: newStatus
-            })
-            .eq("id", orderId);
+        const { error: updateError } = await supabaseClient.rpc("update_warehouse_order_status", {
+            p_order_id: orderId,
+            p_status: newStatus
+        });
 
 
         if (updateError) {
@@ -3910,51 +4040,7 @@ async function updateOrderStatus(orderId, newStatus) {
             return;
         }
 
-
-        // =========================
-        // 4 - إنشاء إشعار للمستخدم
-        // =========================
-
-        if (order.user_id) {
-
-            const {
-                error: notificationError
-            } = await supabaseClient
-                .from("notifications")
-                .insert({
-
-                    user_id: order.user_id,
-
-                    order_id: order.id,
-
-                    title: "تحديث حالة الطلب 🔔",
-
-                    message:
-                        `تم تحديث حالة طلبك #${order.id} إلى "${newStatus}"`
-
-                });
-
-
-            if (notificationError) {
-
-                console.error(
-                    "خطأ في إنشاء الإشعار:",
-                    notificationError
-                );
-
-                alert(
-                    "تم تحديث حالة الطلب، لكن حدث خطأ في إرسال الإشعار."
-                );
-
-                return;
-            }
-
-        }
-
-
-        // =========================
-        // 5 - نجاح
-        // =========================
+        // تنشئ دالة الحفظ إشعار العميل وتقيّد التحديث بالمخزن المصرح به.
 
         alert(
             `تم تحديث الطلب #${order.id} إلى "${newStatus}" ✅`
@@ -4013,53 +4099,23 @@ async function moveOrderToWarehouse(orderId, warehouse) {
 async function printOrder(orderId) {
 
     try {
+        // الطلب مع عناصره محمّل مسبقًا بصلاحية المخزن؛ نستخدمه كي لا تحجب RLS عملية الطباعة.
+        let order = adminOrdersData.find(item => String(item.id) === String(orderId));
 
-        const {
-            data: order,
-            error: orderError
-        } =
-            await supabaseClient
-                .from("orders")
-                .select("*")
-                .eq("id", orderId)
-                .single();
+        if (!order) {
+            const { data, error } = await supabaseClient.rpc("list_warehouse_orders", {
+                p_warehouse: selectedWarehouse
+            });
+            if (error) throw error;
+            order = (Array.isArray(data) ? data : []).find(item => String(item.id) === String(orderId));
+        }
 
-
-        if (orderError || !order) {
-
-            console.error(orderError);
-
-            alert(
-                "لم يتم العثور على الطلب"
-            );
-
+        if (!order) {
+            alert("لم يتم العثور على الطلب ضمن مخزن حسابك.");
             return;
         }
 
-
-        const {
-            data: items,
-            error: itemsError
-        } =
-            await supabaseClient
-                .from("order_items")
-                .select("*")
-                .eq("order_id", orderId)
-                .order("id", {
-                    ascending: true
-                });
-
-
-        if (itemsError) {
-
-            console.error(itemsError);
-
-            alert(
-                "حدث خطأ أثناء تحميل منتجات الطلب"
-            );
-
-            return;
-        }
+        const items = order.items || [];
 
 
         const date =
@@ -4160,11 +4216,11 @@ Object.entries(typeCodes).forEach(
                         </td>
 
                         <td>
-                            ${quantity}
+                            ${item.storage_location || "غير محدد"}
                         </td>
 
                         <td>
-                            ${price.toFixed(2)} ر.س
+                            ${quantity}
                         </td>
 
                         <td>
@@ -4653,11 +4709,11 @@ Object.entries(typeCodes).forEach(
                 </th>
 
                 <th>
-                    الكمية
+                    موقع القطعة
                 </th>
 
                 <th>
-                    السعر
+                    الكمية
                 </th>
 
                 <th>
@@ -4808,55 +4864,22 @@ async function editOrder(orderId) {
            جلب الطلب
         ========================= */
 
-        const {
-            data: order,
-            error: orderError
-        } = await supabaseClient
-            .from("orders")
-            .select("*")
-            .eq("id", orderId)
-            .single();
-
-
-        if (orderError || !order) {
-
-            console.error(orderError);
-
-            alert("لم يتم العثور على الطلب");
-
-            return;
-
-        }
-
-
-        /* =========================
-           جلب منتجات الطلب
-        ========================= */
-
-        const {
-            data: items,
-            error: itemsError
-        } = await supabaseClient
-            .from("order_items")
-            .select("*")
-            .eq("order_id", orderId)
-            .order("id", {
-                ascending: true
+        // نفتح الطلب من البيانات المحمّلة بصلاحية المخزن بدل استعلام مباشر قد تمنعه RLS.
+        let order = adminOrdersData.find(item => String(item.id) === String(orderId));
+        if (!order) {
+            const { data, error } = await supabaseClient.rpc("list_warehouse_orders", {
+                p_warehouse: selectedWarehouse
             });
-
-
-        if (itemsError) {
-
-            console.error(itemsError);
-
-            alert(
-                "حدث خطأ أثناء تحميل منتجات الطلب:\n" +
-                itemsError.message
-            );
-
-            return;
-
+            if (error) throw error;
+            order = (Array.isArray(data) ? data : []).find(item => String(item.id) === String(orderId));
         }
+
+        if (!order) {
+            alert("لم يتم العثور على الطلب ضمن مخزن حسابك.");
+            return;
+        }
+
+        const items = order.items || [];
 
 
         /* =========================
@@ -5250,15 +5273,8 @@ async function saveOrderEdit() {
                 "editOrderDriverNumber"
             ).value.trim();
 
-        let driverWarehouse = selectedWarehouse;
-        if (driverNumber) {
-            const { data: driver } = await supabaseClient
-                .from("drivers")
-                .select("warehouse")
-                .eq("driver_number", driverNumber)
-                .maybeSingle();
-            driverWarehouse = driver?.warehouse || selectedWarehouse;
-        }
+        // يبقى الطلب داخل المخزن المفتوح للحساب؛ لا يجوز للمستخدم المقيّد نقله لمخزن آخر.
+        const driverWarehouse = selectedWarehouse;
 
 
         /* =========================
@@ -5267,6 +5283,42 @@ async function saveOrderEdit() {
 
         const total =
             calculateEditOrderTotal();
+
+        // تحفظ الدالة الطلب وعناصره معًا وتتأكد من صلاحية الحساب على المخزن.
+        const { error: saveError } = await supabaseClient.rpc("save_warehouse_order", {
+            p_order_id: editingOrderId,
+            p_order: {
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                driver_name: driverName,
+                driver_number: driverNumber,
+                warehouse: driverWarehouse,
+                total
+            },
+            p_items: editingOrderItems.map(item => ({
+                product_id: item.product_id || null,
+                product_code: item.product_code || null,
+                category: item.category || null,
+                product_type: item.product_type || null,
+                type: item.type || null,
+                company: item.company || null,
+                model: item.model || null,
+                color: item.color || null,
+                quantity: Math.max(1, Number(item.quantity) || 1),
+                price: Math.max(0, Number(item.price) || 0),
+                image: item.image || null
+            }))
+        });
+
+        if (saveError) throw saveError;
+
+        editOrderMessage.textContent = "تم حفظ تعديل الطلب بنجاح ✅";
+        editOrderMessage.style.color = "#2e9d69";
+        setTimeout(async function () {
+            closeEditOrder();
+            await loadAdminOrders();
+        }, 700);
+        return;
 
 
         /* =========================
